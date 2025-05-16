@@ -5,27 +5,35 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Modal,
 } from 'react-native';
 import * as Animatable from 'react-native-animatable';
-import { Ionicons, Feather } from '@expo/vector-icons'; // Make sure expo/vector-icons is installed
+import { Ionicons, Feather } from '@expo/vector-icons'; 
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useState } from 'react';
+import Logout from '../../assets/images/logout.svg'
 
 const menuItems = [
-  'Profile Setting',
-  'Delivery Address',
-  'My Orders',
-  'My Whishlist',
-  'Return Orders',
-  'Logout',
+  { label: 'Profile Setting', route: '/profile/ProfileSetting' },
+  { label: 'Delivery Address', route: '/profile/DeliveryAddress' },
+  { label: 'My Orders', route: '/profile/MyOrders' },
+  { label: 'My Whishlist', route: '/profile/MyWishlish' },
+  { label: 'Return Orders', route: '/profile/ReturnOrder' },
+  { label: 'Logout', route: '/logout' }, 
 ];
 
 const Profile = () => {
   const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleLogout = () => {
+    setModalVisible(false);
+    router.push('/(tabs)/Home'); 
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity >
           
@@ -39,22 +47,79 @@ const Profile = () => {
       </View>
 
       {/* Body */}
-      <ScrollView contentContainerStyle={styles.content}>
-        {menuItems.map((item, index) => (
-          <Animatable.View
-            key={index}
-            animation="fadeInUp"
-            delay={index * 200}
-            duration={300}
-            useNativeDriver
-          >
-            <TouchableOpacity style={styles.menuItem}>
-              <Text style={styles.menuText}>{item}</Text>
-              <Feather name="chevron-right" size={20} color="#000" />
-            </TouchableOpacity>
-          </Animatable.View>
-        ))}
+       <ScrollView contentContainerStyle={styles.content}>
+        {menuItems.map((item, index) => {
+          if (item.label === 'Logout') {
+            return (
+              <Animatable.View
+                key={index}
+                animation="fadeInUp"
+                delay={index * 200}
+                duration={300}
+                useNativeDriver
+              >
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => setModalVisible(true)}
+                >
+                  <Text style={styles.menuText}>{item.label}</Text>
+                  <Feather name="chevron-right" size={20} color="#000" />
+                </TouchableOpacity>
+              </Animatable.View>
+            );
+          } else {
+            return (
+              <Animatable.View
+                key={index}
+                animation="fadeInUp"
+                delay={index * 200}
+                duration={300}
+                useNativeDriver
+              >
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => router.push(item.route)}
+                >
+                  <Text style={styles.menuText}>{item.label}</Text>
+                  <Feather name="chevron-right" size={20} color="#000" />
+                </TouchableOpacity>
+              </Animatable.View>
+            );
+          }
+        })}
       </ScrollView>
+
+
+
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.iconContainer}>
+import Logout from '../../assets/images/logout.svg'
+              <Logout width={40} height={40} />
+            </View>
+            <Text style={styles.modalText}>
+              Are you sure do you want to{'\n'}Logout ?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Text style={styles.logoutButtonText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -62,7 +127,7 @@ const Profile = () => {
 export default Profile;
 
 const styles = StyleSheet.create({
- container: {
+  container: {
     flex: 1,
     backgroundColor: '#fff',
   },
@@ -100,6 +165,52 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#000',
     fontWeight: '500',
-    fontFamily: 'msemibold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    width: 315,
+    height: 190,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  iconContainer: {
+    marginBottom: 5,
+  },
+  modalText: {
+    fontFamily: 'mbold',
+    fontSize: 16,
+    textAlign: 'center',marginBottom:10
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 4,
+  },
+  cancelButtonText: {
+    color: '#000',
+    fontWeight: '600',
+  },
+  logoutButton: {
+    backgroundColor: '#0B3C5D',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 4,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });
