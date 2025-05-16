@@ -1,5 +1,5 @@
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import { Animated, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useRef } from 'react'
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -7,9 +7,11 @@ import Search from '../components/Search';
 import ProductDisplay from '../components/Productdetails/ProductDisplay';
 import ProductRules from '../components/Productdetails/ProductRules';
 import ProductReview from '../components/Productdetails/ProductReview';
+import ProductStore from '../components/Productdetails/ProductStore';
 
 const ProductDetails = () => {
     const { title, price, image, orders, rating,oldPrice,description } = useLocalSearchParams();
+      const scrollY = useRef(new Animated.Value(0)).current;
     
   return (
     <SafeAreaView style={{backgroundColor:'white',flex:1}}>
@@ -25,7 +27,13 @@ const ProductDetails = () => {
             </TouchableOpacity>
           </View>
           <Search/>
-          <ScrollView>
+          <Animated.ScrollView
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
             {/* for image and price info */}
                 <ProductDisplay
                     title={title}
@@ -43,9 +51,9 @@ const ProductDetails = () => {
   ]}
                     />
                     <ProductRules/>
-                    <ProductReview/>
-
-          </ScrollView>
+                    <ProductReview scrollY={scrollY} />
+                    <ProductStore scrollY={scrollY}/>
+          </Animated.ScrollView>
     </SafeAreaView>
   )
 }
