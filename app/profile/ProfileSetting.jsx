@@ -37,8 +37,9 @@ const ProfileSetting = () => {
       alert('Permission to access gallery is required!');
       return;
     }
+
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true, 
       aspect: [1, 1],       
       quality: 1,
