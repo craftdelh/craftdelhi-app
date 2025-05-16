@@ -15,6 +15,8 @@ import * as Animatable from 'react-native-animatable';
 import ActionSheet from "react-native-actions-sheet";
 import TrackOrder from './TrackOrder';
 import Book from '../../assets/images/book.svg'
+import ReturnOrderRequest from './ReturnOrderRequest';
+import WriteReview from './WriteReview';
 const orders = [
   {
     id: '1',
@@ -63,8 +65,13 @@ const getStatusColor = (status) => {
 
 const MyOrders = () => {
   const [visibleOrders, setVisibleOrders] = useState([]);
-  const actionSheetRef = useRef(null);
+  const trackSheetRef = useRef(null);
+const returnSheetRef = useRef(null);
+const reviewSheetRef = useRef(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedReturn, setSelectedReturn] = useState(null);
+  const [selectedReview, setSelectedReview] = useState(null);
+
 
   useEffect(() => {
     let i = 0;
@@ -83,9 +90,22 @@ const MyOrders = () => {
    const openTrackOrderSheet = (order) => {
     setSelectedOrder(order);
    setTimeout(() => {
-    actionSheetRef.current?.show();
+    trackSheetRef.current?.show();
   }, 100);
   };
+
+  const retrunRequest=(order)=>{
+    setSelectedReturn(order);
+   setTimeout(() => {
+    returnSheetRef.current?.show();
+  }, 100);
+  }
+  const reviewRequest=(order)=>{
+    setSelectedReview(order);
+   setTimeout(() => {
+    reviewSheetRef.current?.show();
+  }, 100);
+  }
 
   const renderOrder = ({ item }) => (
     <Animatable.View animation="fadeInUp" duration={500} style={styles.orderCard}>
@@ -107,10 +127,10 @@ const MyOrders = () => {
         <View style={styles.actionSection}>
           {item.status === 'Delivered' && (
             <>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={()=>reviewRequest(item)}>
                 <Text style={styles.reviewBtn}>Write Review</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ marginTop: 6 }}>
+              <TouchableOpacity onPress={() => retrunRequest(item)} style={{ marginTop: 6 }}>
                 <Text style={styles.returnBtn}>Return Request</Text>
               </TouchableOpacity>
             </>
@@ -161,9 +181,18 @@ const MyOrders = () => {
   contentContainerStyle={visibleOrders.length === 0 ? styles.emptyContent : styles.content}
       />
 
-      <ActionSheet ref={actionSheetRef}>
-      <TrackOrder order={selectedOrder} onClose={() => actionSheetRef.current?.hide()}  />
-    </ActionSheet>
+      <ActionSheet ref={trackSheetRef}>
+  <TrackOrder order={selectedOrder} onClose={() => trackSheetRef.current?.hide()} />
+</ActionSheet>
+
+<ActionSheet ref={returnSheetRef}>
+  <ReturnOrderRequest order={selectedReturn} onClose={() => returnSheetRef.current?.hide()} />
+</ActionSheet>
+
+<ActionSheet ref={reviewSheetRef}>
+  <WriteReview order={selectedReview} onClose={() => reviewSheetRef.current?.hide()} />
+</ActionSheet>
+
     </SafeAreaView>
   );
 };

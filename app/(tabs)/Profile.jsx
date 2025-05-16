@@ -100,7 +100,6 @@ const Profile = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.iconContainer}>
-import Logout from '../../assets/images/logout.svg'
               <Logout width={40} height={40} />
             </View>
             <Text style={styles.modalText}>
