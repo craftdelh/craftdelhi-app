@@ -1,3 +1,4 @@
+import { useNavigation } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -23,11 +24,15 @@ const OurProducts = () => {
   const [showAll, setShowAll] = useState(false);
   const scrollXRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
+const navigation = useNavigation();
   const visibleCategories = showAll ? categories : categories.slice(0, 6);
 
   const handleToggleShowAll = () => {
     setShowAll(prev => !prev);
+  };
+
+  const handleCategoryPress = (categoryName) => {
+    navigation.navigate('ProductCategories', { category: categoryName });
   };
 
   useEffect(() => {
@@ -40,7 +45,7 @@ const OurProducts = () => {
     if (showAll && scrollXRef.current) {
       setTimeout(() => {
         scrollXRef.current.scrollToEnd({ animated: true });
-      }, 100); // Slight delay for layout to render
+      }, 100); 
     }
   }, [showAll]);
 
@@ -62,7 +67,7 @@ const OurProducts = () => {
           showsHorizontalScrollIndicator={false}
         >
           {visibleCategories.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.itemBox}>
+            <TouchableOpacity key={index}  onPress={() => handleCategoryPress(item.name)} style={styles.itemBox}>
               <Image source={item.image} style={styles.imageCircle} />
               <Text style={styles.itemText}>{item.name}</Text>
             </TouchableOpacity>
