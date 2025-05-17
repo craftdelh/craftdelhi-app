@@ -153,7 +153,7 @@ const Cart = () => {
                 <Text style={[styles.summaryLabel, { color: '#EE6F69' }]}>Total Amount</Text>
                 <Text style={[styles.summaryValue, { color: '#EE6F69' }]}>₹{totalAmount.toFixed(2)}</Text>
               </View>
-              <TouchableOpacity style={styles.placeOrderBtn}>
+              <TouchableOpacity onPress={()=>router.push('/PlaceOrder')} style={styles.placeOrderBtn}>
                 <Text style={styles.placeOrderText}>Place Order</Text>
               </TouchableOpacity>
             </View>
