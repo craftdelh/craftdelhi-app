@@ -4,6 +4,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Provider } from 'react-redux';
+import store from '../store';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -32,13 +34,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      
+      <Provider store={store}>
        
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(tabs)" />
           </Stack>
-       
+       </Provider>
     </GestureHandlerRootView>
   );
 }
