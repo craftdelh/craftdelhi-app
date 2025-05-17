@@ -1,5 +1,5 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 
 const TrackOrder = ({ order, onClose }) => {
@@ -7,7 +7,8 @@ const TrackOrder = ({ order, onClose }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+     <ScrollView>
+       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity>
         </TouchableOpacity>
@@ -46,6 +47,10 @@ const TrackOrder = ({ order, onClose }) => {
       <TouchableOpacity style={styles.trackBtn}>
         <Text style={styles.trackText}>Track Order</Text>
       </TouchableOpacity>
+      <View style={{marginTop:20}}>
+        <Text></Text>
+      </View>
+     </ScrollView>
     </SafeAreaView>
   );
 };

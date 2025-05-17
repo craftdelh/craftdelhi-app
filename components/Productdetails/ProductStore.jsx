@@ -8,6 +8,7 @@ import {
   FlatList,
   Image,
   LayoutRectangle,
+  Platform,
 } from 'react-native';
 import React, {
   useEffect,
@@ -239,6 +240,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: -10,
     backgroundColor: '#fff',
+    marginBottom:Platform.OS==='ios'?70:100
   },
   headerRow: {
     flexDirection: 'row',

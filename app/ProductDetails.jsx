@@ -2,12 +2,14 @@ import { Animated, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from
 import React, { useRef } from 'react'
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { ScrollView } from 'react-native-gesture-handler';
 import Search from '../components/Search';
 import ProductDisplay from '../components/Productdetails/ProductDisplay';
 import ProductRules from '../components/Productdetails/ProductRules';
 import ProductReview from '../components/Productdetails/ProductReview';
 import ProductStore from '../components/Productdetails/ProductStore';
+import Chat from '../assets/images/chatnow.svg'
+import Buy from '../assets/images/buynow.svg'
+import Cart from '../assets/images/cartnow.svg'
 
 const ProductDetails = () => {
     const { title, price, image, orders, rating,oldPrice,description } = useLocalSearchParams();
@@ -54,6 +56,25 @@ const ProductDetails = () => {
                     <ProductReview scrollY={scrollY} />
                     <ProductStore scrollY={scrollY}/>
           </Animated.ScrollView>
+
+
+          <View style={styles.floatingBar}>
+  <TouchableOpacity style={[styles.button, styles.chatButton]}>
+    <Chat width={20} height={20} style={styles.iconSpacing} />
+    <Text style={[styles.buttonText, { color: 'black' }]}>Chat Now</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity style={[styles.button, styles.buyButton]}>
+    <Buy width={20} height={20} style={styles.iconSpacing} />
+    <Text style={styles.buttonText}>Buy Now</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity style={[styles.button, styles.cartButton]}>
+    <Cart width={20} height={20} style={styles.iconSpacing} />
+    <Text style={styles.buttonText}>Add to Cart</Text>
+  </TouchableOpacity>
+</View>
+
     </SafeAreaView>
   )
 }
@@ -75,5 +96,53 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
   },
+    floatingBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+   
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+      paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderColor: '#ddd',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+ button: {
+  flex: 1,
+  marginHorizontal: 4,
+  paddingVertical: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+  flexDirection: 'row',
+  justifyContent: 'center',
+  backgroundColor: '#024A63',
+},
+chatButton: {
+  backgroundColor: '#FFC700',
+},
+buyButton: {
+  backgroundColor: '#024A63',
+},
+cartButton: {
+  backgroundColor: '#024A63',
+},
+buttonText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: '600', // replace fontFamily if custom font causes issue on Android
+},
+iconSpacing: {
+  marginRight: 8,
+},
+
+});
+
   
-})

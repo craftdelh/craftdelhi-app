@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MyCarousel from '../../components/home/Carousel';
 import OurProducts from '../../components/home/OurProducts';
 import Justforyou from '../../components/home/Justforyou';
@@ -11,6 +11,9 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+     <View style={{borderBottomWidth:0.2,borderColor:'gray',paddingBottom:10}}>
+      <Text style={{fontFamily:'mbold',textAlign:'center',fontSize:16}}>Home</Text>
+     </View>
      <ScrollView>
     <Search/>
      
@@ -31,8 +34,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingTop: 20,
   },
   
 });
