@@ -13,7 +13,8 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import { Feather } from '@expo/vector-icons';
 import storeimage from '../assets/images/storeimage.png';
 import Products from '../components/store/Products';
-
+import Search from '../components/Search';
+import Chatnow from '../assets/images/chatnow.svg'
 
 const Store = () => {
   const [active, setActive] = useState('products');
@@ -30,6 +31,8 @@ const Store = () => {
           <Feather name="shopping-cart" size={22} color="black" />
         </TouchableOpacity>
       </View>
+
+      <Search/>
 
       <ScrollView>
         {/* Store Info */}
@@ -111,6 +114,13 @@ const Store = () => {
         }
 
       </ScrollView>
+      <View style={styles.bottomBar}>
+  <TouchableOpacity style={styles.chatButton}>
+    <Chatnow width={25} height={25} />
+    <Text style={styles.chatButtonText}>Chat Now</Text>
+  </TouchableOpacity>
+</View>
+
     </SafeAreaView>
   );
 };
@@ -230,4 +240,32 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '500',
   },
+  bottomBar: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: 'white',
+  paddingVertical: 25,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+chatButton: {
+  paddingVertical: 10,
+  paddingHorizontal: 24,
+  backgroundColor: '#FFC700',
+  borderRadius: 10,
+  flexDirection:'row',
+  alignItems:'center',
+  justifyContent:'center',
+  gap:5
+},
+
+chatButtonText: {
+  color: 'black',
+  fontFamily: 'mbold',
+  fontSize: 16,
+}
+
 });

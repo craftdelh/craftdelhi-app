@@ -15,11 +15,12 @@ import { useNavigation } from '@react-navigation/native';
 const { height } = Dimensions.get('window');
 
 const dummyReels = [
-  { id: '1', video: require('../assets/images/v0.mp4') },
-  { id: '4', video: require('../assets/images/v4.mp4') },
-  { id: '2', video: require('../assets/images/v1.mp4') },
-  { id: '3', video: require('../assets/images/v2.mp4') },
+  { id: '1', video: require('../assets/images/v0.mp4'), likes: 123 },
+  { id: '4', video: require('../assets/images/v4.mp4'), likes: 456 },
+  { id: '2', video: require('../assets/images/v1.mp4'), likes: 789 },
+  { id: '3', video: require('../assets/images/v2.mp4'), likes: 321 },
 ];
+
 
 const Reels = () => {
   const navigation = useNavigation();
@@ -102,22 +103,26 @@ const Reels = () => {
         />
       )}
 
-      <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => toggleLike(item.id)}
-        >
-          <AntDesign
-            name={likedReels[item.id] ? 'heart' : 'hearto'}
-            size={28}
-            color={likedReels[item.id] ? 'red' : 'white'}
-          />
-        </TouchableOpacity>
+     <View style={styles.overlay}>
+  <TouchableOpacity
+    style={styles.iconButton}
+    onPress={() => toggleLike(item.id)}
+  >
+    <AntDesign
+      name={likedReels[item.id] ? 'heart' : 'hearto'}
+      size={28}
+      color={likedReels[item.id] ? 'red' : 'white'}
+    />
+  </TouchableOpacity>
+  <Text style={styles.likesText}>
+    {likedReels[item.id] ? item.likes + 1 : item.likes}
+  </Text>
 
-        <TouchableOpacity style={styles.iconButton}>
-          <AntDesign name="sharealt" size={28} color="white" />
-        </TouchableOpacity>
-      </View>
+  <TouchableOpacity style={styles.iconButton}>
+    <AntDesign name="sharealt" size={28} color="white" />
+  </TouchableOpacity>
+</View>
+
     </View>
   );
 
@@ -168,6 +173,7 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginVertical: 10,
+    marginTop:20
   },
   header: {
     position: 'absolute',
@@ -188,4 +194,11 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     top: '45%',
   },
+  likesText: {
+  color: 'white',
+  fontSize: 16,
+  marginTop: 5,
+  textAlign: 'center',
+},
+
 });
