@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -35,7 +36,7 @@ const Chat = () => {
 
   const renderItem = ({ item }) => (
   <View>
-    <TouchableOpacity style={styles.chatItem}>
+    <TouchableOpacity style={styles.chatItem} onPress={() => router.push({ pathname: '/Chatscreen', params: { id: item.id, name: item.name } })}>
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{item.name.substring(0, 3).toUpperCase()}</Text>
       </View>
