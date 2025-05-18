@@ -9,41 +9,19 @@ import {
   Image,
 } from 'react-native';
 import * as Animatable from 'react-native-animatable';
+import Emptycart from '../../assets/images/emptycart.svg'
 
 import { Feather } from '@expo/vector-icons';
 import ProfileHeader from './ProfileHeader';
+import { useDispatch, useSelector } from 'react-redux';
+import { removeFromWishlist } from '../../redux/WishListReducer';
 
-const orders = [
-  {
-    id: '1',
-    status: 'Out Of Stock',
-    date: '12 Sep - 2024',
-    price: '₹ 1,000.00',
-    productTitle: 'Acrylic Gift Boxes -  Clear Dustproof Protection ShowcaseClear Dustproof Protection Showcase..Clear Dustproof Protection Showcase.',
-    image:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-0rShayjD0P71gcyLdrtoi57iWSWkFnfUew&s',
-  },
-  {
-    id: '2',
-    status: 'Out Of Stock',
-    date: '12 Sep - 2024',
-    price: '₹ 1,000.00',
-    productTitle: 'Acrylic Gift Boxes - Clear Dustproof Protection Showcase.',
-    image:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-0rShayjD0P71gcyLdrtoi57iWSWkFnfUew&s',
-  },
-  {
-    id: '3',
-    status: 'Available',
-    date: '12 Sep - 2024',
-    price: '₹ 1,000.00',
-    productTitle: 'Acrylic Gift Boxes - Clear Dustproof Protection Showcase.',
-    image:
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-0rShayjD0P71gcyLdrtoi57iWSWkFnfUew&s',
-  },
-];
+
 
 const MyWishlist = () => {
+    const dispatch = useDispatch();
+  const wishlist = useSelector((state) => state.wishlist.wishlist);
+  // console.log('wiwiwi',wishlist);
   return (
     <SafeAreaView style={styles.container}>
       <ProfileHeader />
@@ -51,41 +29,52 @@ const MyWishlist = () => {
         <Text style={styles.sectionTitle}>My Wishlist</Text>
         <View style={styles.divider} />
 
-       {orders.map((item, index) => (
-  <TouchableOpacity key={item.id} onPress={() => console.log('Card pressed', item.id)}>
-    <Animatable.View
-      animation="slideInUp"
-      duration={600}
-      delay={index * 150} // Delay for staggered effect
-      useNativeDriver
-    >
-      <View style={styles.card}>
-        <Image source={{ uri: item.image }} style={styles.image} />
-        <View style={styles.infoContainer}>
-          <View style={styles.priceRow}>
-            <Text style={styles.price}>{`Price ${item.price}`}</Text>
-            <TouchableOpacity onPress={() => console.log('Delete pressed', item.id)}>
-              <Feather name="trash-2" size={18} color="red" />
-            </TouchableOpacity>
+    {wishlist.length === 0 ? (
+  <View style={{ alignItems: 'center', marginTop: 40 }}>
+   <Emptycart width={50} height={50} />
+    <Text style={{ fontSize: 16, fontFamily: 'msemibold', color: '#888',marginTop:20 }}>
+      Your wishlist is empty.
+    </Text>
+  </View>
+) : (
+  wishlist.map((item, index) => (
+    <TouchableOpacity key={item.id} onPress={() => console.log('Card pressed', item.id)}>
+      <Animatable.View
+        animation="slideInUp"
+        duration={600}
+        delay={index * 150}
+        useNativeDriver
+      >
+        <View style={styles.card}>
+          <Image source={{ uri: item.image }} style={styles.image} />
+          <View style={styles.infoContainer}>
+            <Text style={styles.title}>{item.title}</Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>{`Price ${item.price}`}</Text>
+              <TouchableOpacity onPress={() => dispatch(removeFromWishlist(item))}>
+                <Feather name="trash-2" size={18} color="red" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.date}>12 Sep - 2024</Text>
+            <Text
+              style={[
+                styles.stockStatus,
+                {
+                  color: item.status === 'Available' ? '#28B463' : '#E74C3C',
+                },
+              ]}
+            >
+              Available
+            </Text>
           </View>
-          <Text style={styles.date}>{item.date}</Text>
-          <Text
-            style={[
-              styles.stockStatus,
-              {
-                color: item.status === 'Available' ? '#28B463' : '#E74C3C',
-              },
-            ]}
-          >
-            {item.status}
-          </Text>
         </View>
-      </View>
-      <Text style={styles.title}>{item.productTitle}</Text>
-      <View style={styles.divider} />
-    </Animatable.View>
-  </TouchableOpacity>
-))}
+        <Text style={styles.description}>{item.description}</Text>
+        <View style={styles.divider} />
+      </Animatable.View>
+    </TouchableOpacity>
+  ))
+)}
+
 
 
       </ScrollView>
@@ -157,5 +146,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#222',
     fontWeight: '600',
+    fontFamily:'mbold'
   },
+  description:{
+     fontSize: 14,
+    color: 'gray',
+    fontWeight: '600',
+  }
 });

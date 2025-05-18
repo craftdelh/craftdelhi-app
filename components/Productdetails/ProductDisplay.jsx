@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,50 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Video } from 'expo-av';
 import { EvilIcons, FontAwesome } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToWishlist, removeFromWishlist } from '../../redux/WishListReducer';
 
 const { width } = Dimensions.get('window');
 
-const ProductDisplay = ({ title, price, image, thumbnails, orders, rating,oldPrice,description }) => {
+const ProductDisplay = ({ id,title, price, image, thumbnails, orders, rating,oldPrice,description }) => {
+  const item={id,title, price, image, thumbnails, orders, rating,oldPrice,description }
+  const [isWishlisted, setIsWishlisted] = useState(false);
+   const wishlist = useSelector((state) => state.wishlist.wishlist);
   const [selected, setSelected] = useState({ type: 'image', uri: image });
   const handleSelect = (item) => {
     setSelected(item);
   };
+  const [toastMessage, setToastMessage] = useState('');
+const [showSuccess, setShowSuccess] = useState(false);
+
+
+
+    const dispatch = useDispatch();
+
+  const handleBookmark = () => {
+  setIsWishlisted(!isWishlisted);
+  if (!isWishlisted) {
+    dispatch(addToWishlist(item));
+    setToastMessage('Item added to Wishlist successfully !');
+  } else {
+    dispatch(removeFromWishlist(item));
+    setToastMessage('Item removed from Wishlist successfully !');
+  }
+
+  setShowSuccess(true);
+  setTimeout(() => {
+    setShowSuccess(false);
+    setToastMessage('');
+  }, 2000);
+};
+
+    useEffect(() => {
+    setIsWishlisted(wishlist.some(isWishlisted => isWishlisted.id === item.id));
+  }, [wishlist]);
 
   const renderMainMedia = () => {
     if (selected.type === 'video') {
@@ -80,8 +113,8 @@ const ProductDisplay = ({ title, price, image, thumbnails, orders, rating,oldPri
         ({orders}) Orders Sold | <Text style={styles.rating}>{rating} Ratings</Text>
       </Text>
       <View style={{flexDirection:'row',alignItems:'center',gap:10}}>
-           <TouchableOpacity>
-             <FontAwesome name="heart-o" size={24} color="#EE6F69" />
+           <TouchableOpacity onPress={handleBookmark}>
+             <FontAwesome name={isWishlisted ? 'heart' : 'heart-o'} size={24} color="#EE6F69" />
            </TouchableOpacity>
             <TouchableOpacity>
                 <EvilIcons name="share-google" size={30} color="black" />
@@ -89,6 +122,14 @@ const ProductDisplay = ({ title, price, image, thumbnails, orders, rating,oldPri
       </View>
      </View>
      <Text style={styles.description}>{description}</Text>
+
+     {showSuccess && (
+  <View style={styles.toast}>
+    <Text style={styles.toastText}>{toastMessage}</Text>
+  </View>
+)}
+
+
     </View>
   );
 };
@@ -166,5 +207,30 @@ const styles = StyleSheet.create({
   rating: {
     color: '#28B463',
     fontWeight: '600',
-  },
+  },toast: {
+  position: 'absolute',
+  top: width * 0.4, 
+  alignSelf: 'center',
+  backgroundColor: '#F0F4FF',
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+  borderRadius: 12,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 6,
+  elevation: 10,
+  zIndex: 9999,
+  minWidth: '70%',
+},
+
+toastText: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#2C2C2C',
+  textAlign: 'center',
+  fontFamily: 'mbold',
+},
+
+
 });

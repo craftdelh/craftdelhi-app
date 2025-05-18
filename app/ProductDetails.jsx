@@ -31,11 +31,11 @@ const ProductDetails = () => {
   quantity: 1
 };
       const scrollY = useRef(new Animated.Value(0)).current;
-      const wishlist = useSelector((state) => state.wishlist.wishlist);
   const cart = useSelector((state) => state.cart.cart);
     const cartItem = cart.find((c) => c.id === id);
     const dispatch = useDispatch();
-    console.log('cart',cart)
+    // console.log('cart',cart)
+
   return (
     <SafeAreaView style={{backgroundColor:'white',flex:1}}>
          <View style={styles.header}>
@@ -59,6 +59,7 @@ const ProductDetails = () => {
       >
             {/* for image and price info */}
                 <ProductDisplay
+                id={id}
                     title={title}
                     price={price}
                     image={image}
