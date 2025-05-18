@@ -7,43 +7,28 @@ import Chat from '../../assets/images/chatnow.svg'
 import Buy from '../../assets/images/delivery2.svg'
 import { Entypo, AntDesign } from '@expo/vector-icons'
 import { router } from 'expo-router'
+import { useDispatch, useSelector } from 'react-redux';
+import { decrementQuantity, incrementQuantity, removeFromCart } from '../../redux/CartReducer'
+import * as Haptics from 'expo-haptics';
+
 
 const Cart = () => {
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      title: 'Acrylic Gift Boxes - Clear Dustproof Protection Showcase. Display box for Toys, Jewelry, Home and wedding',
-      image: 'https://i.imgur.com/0y8Ftya.png',
-      price: 1000,
-      discountedPrice: 750,
-      quantity: 1,
-    },
-    {
-      id: 2,
-      title: 'Elegant Leather Journal Notebook for Writing and Sketching',
-      image: 'https://i.imgur.com/fU7n6EA.png',
-      price: 1200,
-      discountedPrice: 899,
-      quantity: 1,
-    },
-  ])
+    const cart = useSelector((state) => state.cart.cart);
+  console.log('cartsss', cart);
+  const dispatch = useDispatch();
 
-  const updateQuantity = (id, action) => {
-    setProducts(prev =>
-      prev.map(item =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: action === 'increment' ? item.quantity + 1 : Math.max(1, item.quantity - 1),
-            }
-          : item
-      )
-    )
-  }
+   const parseAmount = (value) => {
+    const num = parseFloat(value?.replace(/[^0-9.-]+/g, ''));
+    return isNaN(num) ? 0 : num;
+  };
 
-  const totalProductAmount = products.reduce((sum, p) => sum + p.price, 0)
-  const shippingFee = 150
-  const totalAmount = totalProductAmount + shippingFee
+  const totalProductAmount = cart.reduce((sum, item) => {
+    return sum + parseAmount(item.price) * item.quantity;
+  }, 0);
+
+  const shippingFee = 150;
+  const totalAmount = totalProductAmount + shippingFee;
+
 
   return (
     <SafeAreaView style={{ backgroundColor: 'white', flex: 1 }}>
@@ -51,7 +36,7 @@ const Cart = () => {
         <Text style={styles.headerTitle}>Cart</Text>
       </View>
 
-      {products.length === 0 ? (
+      {cart.length === 0 ? (
         <View style={styles.emptyCartContainer}>
           <View style={{justifyContent:'center',alignItems:'center',flex:1}}>
             <Emptycart width={50} height={50} />
@@ -94,7 +79,7 @@ const Cart = () => {
 
           {/* Product List */}
           <View style={{ marginTop: 20 }}>
-            {products.map(item => (
+            {cart.map(item => (
               <View key={item.id}>
                 <View style={styles.divider} />
                 <View style={styles.productCard}>
@@ -102,16 +87,22 @@ const Cart = () => {
                     <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
                     <View style={{ flex: 1 }}>
                       <View style={styles.productHeader}>
-                        <Text style={styles.price}>Price ₹{item.price.toFixed(2)}</Text>
-                        <TouchableOpacity>
+                        <Text style={styles.price}>₹{parseAmount(item.price).toFixed(2)}</Text>
+                        <TouchableOpacity onPress={() => dispatch(removeFromCart(item))}>
                           <AntDesign name="delete" size={20} color="red" />
                         </TouchableOpacity>
                       </View>
-                      <Text style={styles.discountedPrice}>₹{item.discountedPrice.toFixed(2)}</Text>
+                      <Text style={styles.discountedPrice}>₹{parseAmount(item.oldPrice).toFixed(2)}</Text>
+                        
 
                       <View style={styles.quantityContainer}>
                         <TouchableOpacity
-                          onPress={() => updateQuantity(item.id, 'decrement')}
+                          onPress={() => {
+                              if (item.quantity > 1) {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                dispatch(decrementQuantity(item));
+                              }
+                            }}
                           style={styles.circleButton}
                         >
                           <Text style={styles.quantityBtnText}>-</Text>
@@ -120,7 +111,10 @@ const Cart = () => {
                         <Text style={styles.quantityText}>{item.quantity}</Text>
 
                         <TouchableOpacity
-                          onPress={() => updateQuantity(item.id, 'increment')}
+                          onPress={() => {
+                              dispatch(incrementQuantity(item));
+                               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            }}
                           style={styles.circleButton}
                         >
                           <Text style={styles.quantityBtnText}>+</Text>
@@ -130,6 +124,9 @@ const Cart = () => {
                   </View>
                   <Text style={[styles.productTitle, { marginTop: 10 }]} numberOfLines={2}>
                     {item.title}
+                  </Text>
+                   <Text style={[styles.productTitle, { marginTop: 10,color:'gray' }]} numberOfLines={2}>
+                    {item.description}
                   </Text>
                   <TouchableOpacity style={styles.chatButton}>
                     <Chat width={20} height={20} />

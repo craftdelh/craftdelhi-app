@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import Logout from '../../assets/images/logout.svg'
+import { useSelector } from 'react-redux';
 
 const menuItems = [
   { label: 'Profile Setting', route: '/profile/ProfileSetting' },
@@ -31,6 +32,8 @@ const Profile = () => {
     setModalVisible(false);
     router.push('/(tabs)/Home'); 
   };
+    const cart = useSelector(state => state.cart.cart);
+  const cartCount = cart?.length ?? 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,9 +44,34 @@ const Profile = () => {
 
         <Text style={styles.headerTitle}>My Profile</Text>
 
-        <TouchableOpacity onPress={()=>router.push('/(tabs)/Cart')}>
-          <Feather name="shopping-cart" size={22} color="black" />
-        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/Cart')} style={{ position: 'relative' }}>
+  <Feather
+    name="shopping-cart"
+    size={22}
+    color={cartCount > 0 ? 'green' : 'black'}
+  />
+  {cartCount > 0 && (
+    <View
+      style={{
+        position: 'absolute',
+        top: -6,
+        right: -10,
+        backgroundColor: '#4E9C70',
+        borderRadius: 10,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        minWidth: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+        {cartCount}
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
       </View>
 
       {/* Body */}

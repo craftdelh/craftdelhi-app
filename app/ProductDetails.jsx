@@ -9,12 +9,33 @@ import ProductReview from '../components/Productdetails/ProductReview';
 import ProductStore from '../components/Productdetails/ProductStore';
 import Chat from '../assets/images/chatnow.svg'
 import Buy from '../assets/images/buynow.svg'
-import Cart from '../assets/images/cartnow.svg'
+import Cart from '../assets/images/cartnow.svg';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCart } from '../redux/CartReducer';
+import ActionSheet from 'react-native-actions-sheet';
+import Toast from 'react-native-toast-message';
+import BuyNow from '../components/BuyNow';
 
 const ProductDetails = () => {
-    const { title, price, image, orders, rating,oldPrice,description } = useLocalSearchParams();
+    const actionSheetRef = useRef(null);
+    const { id,title, price, image, orders, rating,oldPrice,description } = useLocalSearchParams();
+    const item = {
+  id, 
+  title,
+  price,
+  image,
+  orders,
+  rating,
+  oldPrice,
+  description,
+  quantity: 1
+};
       const scrollY = useRef(new Animated.Value(0)).current;
-    
+      const wishlist = useSelector((state) => state.wishlist.wishlist);
+  const cart = useSelector((state) => state.cart.cart);
+    const cartItem = cart.find((c) => c.id === id);
+    const dispatch = useDispatch();
+    console.log('cart',cart)
   return (
     <SafeAreaView style={{backgroundColor:'white',flex:1}}>
          <View style={styles.header}>
@@ -64,17 +85,33 @@ const ProductDetails = () => {
     <Text style={[styles.buttonText, { color: 'black' }]}>Chat Now</Text>
   </TouchableOpacity>
 
-  <TouchableOpacity style={[styles.button, styles.buyButton]}>
+  <TouchableOpacity onPress={()=>actionSheetRef.current?.show()} style={[styles.button, styles.buyButton]}>
     <Buy width={20} height={20} style={styles.iconSpacing} />
     <Text style={styles.buttonText}>Buy Now</Text>
   </TouchableOpacity>
 
-  <TouchableOpacity style={[styles.button, styles.cartButton]}>
+  {cartItem ? (
+  <View style={[styles.button, styles.cartButton,{paddingHorizontal:5}]}>
+    <Ionicons name="checkmark-done-circle" size={15} color="white" style={styles.iconSpacing} />
+    <Text style={styles.buttonText}>Added to Cart</Text>
+  </View>
+) : (
+  <TouchableOpacity onPress={() => {dispatch(addToCart(item));  Toast.show({
+      type: 'success',
+      text1: 'Added to Cart',
+      position: 'bottom',
+      visibilityTime: 2000,
+    }); }} style={[styles.button, styles.cartButton]}>
     <Cart width={20} height={20} style={styles.iconSpacing} />
     <Text style={styles.buttonText}>Add to Cart</Text>
   </TouchableOpacity>
+)}
+
 </View>
 
+ <ActionSheet ref={actionSheetRef}>
+      <BuyNow onClose={()=>actionSheetRef.current?.hide()} item={item}/>
+    </ActionSheet>
     </SafeAreaView>
   )
 }

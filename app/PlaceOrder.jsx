@@ -15,6 +15,9 @@ import Card from '../assets/images/card.svg';
 import Entypo from '@expo/vector-icons/Entypo';
 import ActionSheet from 'react-native-actions-sheet';
 import PaymentOPtions from '../components/PaymentOPtions';
+import { useDispatch, useSelector } from 'react-redux';
+import Toast from 'react-native-toast-message';
+import { cleanCart } from '../redux/CartReducer';
 
 const PlaceOrder = () => {
   const [promoCode, setPromoCode] = useState('');
@@ -26,18 +29,28 @@ const PlaceOrder = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
 const [orderId] = useState('12231232132134444444'); 
 
-  const productAmount = 1000;
-  const shippingFee = 150;
+
 
   const handleApplyPromo = () => {
     if (promoCode.trim().toUpperCase() === 'FIRST100') {
       setDiscount(100);
       setIsApplied(true);
-      Alert.alert('Success', 'Promo code applied! ₹100 off');
+      Toast.show({
+            type: 'success',
+            text1:  'Promo code applied! ₹100 off',
+            position: 'bottom',
+            visibilityTime: 2000,
+          });
     } else {
       setDiscount(0);
       setIsApplied(false);
-      Alert.alert('Error', 'Invalid promo code');
+      Toast.show({
+            type: 'error',
+            text1:  'Invalid promo code',
+            position: 'bottom',
+            visibilityTime: 2000,
+          });
+      
     }
   };
 
@@ -52,7 +65,20 @@ const [orderId] = useState('12231232132134444444');
     actionSheetRef.current?.hide();
   };
 
-  const totalAmount = productAmount + shippingFee - discount;
+  const cart = useSelector((state) => state.cart.cart);
+  const dispatch = useDispatch();
+
+   const parseAmount = (value) => {
+    const num = parseFloat(value?.replace(/[^0-9.-]+/g, ''));
+    return isNaN(num) ? 0 : num;
+  };
+
+  const totalProductAmount = cart.reduce((sum, item) => {
+    return sum + parseAmount(item.price) * item.quantity;
+  }, 0);
+
+  const shippingFee = 150;
+ const totalAmount = Math.max(0, totalProductAmount + shippingFee - discount);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -93,7 +119,7 @@ const [orderId] = useState('12231232132134444444');
 
             {/* Order Summary */}
             <View style={styles.summaryContainer}>
-              <SummaryRow label="Product Amount" value={`₹ ${productAmount.toFixed(2)}`} />
+              <SummaryRow label="Product Amount" value={`₹ ${totalProductAmount.toFixed(2)}`} />
               <SummaryRow label="Shipping Fee" value={`₹ ${shippingFee.toFixed(2)}`} />
               {discount > 0 && (
                 <SummaryRow
@@ -107,7 +133,7 @@ const [orderId] = useState('12231232132134444444');
                 <SummaryRow label="Payment Method" value={formatPaymentMethod(selectedMethod)} />
               )}
               <View style={styles.divider} />
-              <SummaryRow label="Total Amount" value={`₹ ${totalAmount.toFixed(2)}`} highlight />
+             <SummaryRow label="Total Amount" value={`₹ ${totalAmount.toFixed(2)}`} highlight />
 
               {/* Show Card Details if payment method is card and paymentData is available */}
               {selectedMethod !== '' && paymentData && (
@@ -158,13 +184,14 @@ const [orderId] = useState('12231232132134444444');
     <View style={styles.confirmationBox}>
       <Feather name="check-circle" size={48} color="green" />
       <Text style={styles.confirmText}>Thank you for purchasing.</Text>
-      <Text style={styles.priceText}>Price ₹ {totalAmount.toLocaleString()}</Text>
+      <Text style={styles.priceText}>Price ₹ {totalAmount.toFixed(2)}</Text>
       <Text style={styles.orderText}>your Order Number is</Text>
       <Text style={styles.orderId}>{orderId}</Text>
       <TouchableOpacity
         style={styles.continueBtn}
         onPress={() => {
           setShowConfirmation(false);
+          dispatch(cleanCart());
           router.push('/(tabs)/Home'); 
         }}
       >

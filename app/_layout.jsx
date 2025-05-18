@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider } from 'react-redux';
-import store from '../store';
+import { store, persistor } from '../store'; 
+import { PersistGate } from 'redux-persist/integration/react';
+import Toast from 'react-native-toast-message';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -35,11 +37,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
-       
+        <PersistGate loading={null} persistor={persistor}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(tabs)" />
           </Stack>
+            <Toast />
+            </PersistGate>
        </Provider>
     </GestureHandlerRootView>
   );

@@ -1,15 +1,16 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { View, Text } from 'react-native';
 import Entypo from '@expo/vector-icons/Entypo';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import home from '../../assets/images/home.svg';
-import chat from '../../assets/images/chat.svg'
-import cart from '../../assets/images/cart.svg'
-import profile from '../../assets/images/profile.svg';
+import { useSelector } from 'react-redux';
 
 export default function TabLayout() {
+  const cart = useSelector(state => state.cart.cart);
+  const cartCount = cart?.length ?? 0;
+
   return (
     <Tabs
       screenOptions={{
@@ -50,7 +51,27 @@ export default function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="cart-outline" size={22} color={color} />
+            <View>
+              <MaterialCommunityIcons name="cart-outline" size={22} color={color} />
+              {cartCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -10,
+                    backgroundColor: 'white',
+                    borderRadius: 10,
+                    paddingHorizontal: 5,
+                    paddingVertical: 1,
+                    minWidth: 18,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: 'black', fontSize: 10 }}>{cartCount}</Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
@@ -58,7 +79,6 @@ export default function TabLayout() {
         name="Profile"
         options={{
           title: 'Profile',
-          headerShown:false,
           tabBarIcon: ({ color }) => (
             <FontAwesome name="user" size={22} color={color} />
           ),

@@ -158,13 +158,14 @@ const reviewSheetRef = useRef(null);
 
   return (
     <SafeAreaView style={styles.container}>
+      <ProfileHeader />
       <FlatList
         data={visibleOrders}
         keyExtractor={(item) => item.id}
         renderItem={renderOrder}
         ListHeaderComponent={() => (
          <>
-          <ProfileHeader />
+          
           <View style={styles.header}>
             
             <Text style={styles.sectionTitle}>My Orders</Text>
