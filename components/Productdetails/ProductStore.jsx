@@ -188,7 +188,7 @@ const ProductStore = ({ scrollY }) => {
       style={styles.container}
       onLayout={(e) => setLayout(e.nativeEvent.layout)}
     >
-      <TouchableOpacity style={styles.headerRow}>
+      <TouchableOpacity onPress={()=>router.push('/Store')} style={styles.headerRow}>
         <Store width={100} height={60} />
         <Text style={styles.storeTitle}>Craft Delhi Store</Text>
         <Entypo name="chevron-right" size={24} color="black" />

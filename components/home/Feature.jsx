@@ -23,7 +23,7 @@ const Feature = () => {
         <Video
           ref={video}
           source={{
-            uri: 'https://www.w3schools.com/html/mov_bbb.mp4', // Replace with your actual video URL or local file
+            uri: 'https://www.w3schools.com/html/mov_bbb.mp4', 
           }}
           style={styles.video}
           useNativeControls
