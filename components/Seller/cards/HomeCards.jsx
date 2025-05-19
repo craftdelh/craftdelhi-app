@@ -2,72 +2,26 @@ import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 
-const HomeCards = () => {
+const HomeCards = ({ cardsData }) => {
   return (
     <View>
-       <LinearGradient
-             colors={['#FFE2E6', 'white']}
-             style={[styles.card,{marginTop:-5}]}
-           >
-             <View style={styles.iconContainer}>
-               <View style={styles.outerCircle} />
-               <View style={styles.innerCircle} />
-             </View>
-     
-             <View style={styles.textSection}>
-               <Text style={styles.title}>Total Number Of Sales</Text>
-               <Text style={styles.count}>87</Text>
-               <Text style={styles.change}>+8 from yesterday</Text>
-             </View>
-           </LinearGradient>
+      {cardsData.map((card, index) => (
+        <LinearGradient
+          key={index}
+          colors={card.colors}
+          style={[styles.card, index === 0 && { marginTop: -5 }]}
+        >
+          <View style={styles.iconContainer}>
+            {card.icon}
+          </View>
 
-             <LinearGradient
-             colors={['#FFF4DE', 'white']}
-             style={styles.card}
-           >
-             <View style={styles.iconContainer}>
-               <View style={styles.outerCircle} />
-               <View style={styles.innerCircle} />
-             </View>
-     
-             <View style={styles.textSection}>
-               <Text style={styles.title}>Total Number Of Orders</Text>
-               <Text style={styles.count}>2100</Text>
-               <Text style={styles.change}>+8 from yesterday</Text>
-             </View>
-           </LinearGradient>
-
-             <LinearGradient
-             colors={['#DCFCE7', 'white']}
-             style={styles.card}
-           >
-             <View style={styles.iconContainer}>
-               <View style={styles.outerCircle} />
-               <View style={styles.innerCircle} />
-             </View>
-     
-             <View style={styles.textSection}>
-               <Text style={styles.title}>Pending Orders</Text>
-               <Text style={styles.count}>14</Text>
-               <Text style={styles.change}>+8 from yesterday</Text>
-             </View>
-           </LinearGradient>
-
-             <LinearGradient
-             colors={['#F4E8FF', 'white']}
-             style={styles.card}
-           >
-             <View style={styles.iconContainer}>
-               <View style={styles.outerCircle} />
-               <View style={styles.innerCircle} />
-             </View>
-     
-             <View style={styles.textSection}>
-               <Text style={styles.title}>Cancelled Orders</Text>
-               <Text style={styles.count}>32</Text>
-               <Text style={styles.change}>+8 from yesterday</Text>
-             </View>
-           </LinearGradient>
+          <View style={styles.textSection}>
+            <Text style={styles.title}>{card.title}</Text>
+            <Text style={styles.count}>{card.count}</Text>
+            <Text style={styles.change}>{card.change}</Text>
+          </View>
+        </LinearGradient>
+      ))}
     </View>
   )
 }

@@ -11,31 +11,28 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { dummyOrders } from '../../../sellerdata';
+import { Orderinfo } from '../../../sellerdata'; 
 
-// Add 'All' in statuses for showing all data
-const statuses = ['All', 'Delivered', 'Cancelled', 'Processing'];
 
 const OrderTables = () => {
-  const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('All');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [selectedId, setSelectedId] = useState(null);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null); 
 
-  const filteredData = dummyOrders.filter(item => {
-  const statusMatch = statusFilter === 'All' || item.status === statusFilter;
-  const searchMatch =
-    item.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.productName.toLowerCase().includes(searchQuery.toLowerCase());
-  return statusMatch && searchMatch;
-});
-
+  const filteredData = Orderinfo.filter(item => {
+    const nameMatch = item.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+    const orderMatch = orderStatusFilter === 'All' || item.status === orderStatusFilter;
+    const paymentMatch = paymentStatusFilter === 'All' || item.paymentStatus === paymentStatusFilter;
+    return nameMatch && orderMatch && paymentMatch;
+  });
 
   const renderHeader = () => (
     <View style={[styles.tableRow, styles.headerRow]}>
       {[
-        'Order ID', 'Customer Name', 'Product Name', 'Qty', 'Date',
-        'Status', 'Track #', 'Amount', 'Note', 'Shipping', 'Actions'
+        'Order ID', 'Order Date','Customer Name', 'Product Name', 'Order Status', 'Quantity',
+        'Payment Status', 'Total Amount', 'Customer Description','Actions'
       ].map((header, idx) => (
         <Text key={idx} style={[styles.tableCell, styles.headerText]}>
           {header}
@@ -44,45 +41,50 @@ const OrderTables = () => {
     </View>
   );
 
- const renderItem = (item) => (
-    <TouchableOpacity
-      key={item.id}
-      onPress={() => setSelectedId(item.id)}
-      style={[
-        styles.tableRow,
-        selectedId === item.id && styles.selectedRow,
-      ]}
-    >
-      <Text style={styles.tableCell}>{item.id}</Text>
-      <Text style={styles.tableCell}>{item.customerName}</Text>
-      <Text style={styles.tableCell}>{item.productName}</Text>
-      <Text style={styles.tableCell}>{item.quantity}</Text>
-      <Text style={styles.tableCell}>{item.date}</Text>
-      <Text style={[styles.tableCell, getStatusStyle(item.status)]}>
-        {item.status}
-      </Text>
-      <Text style={styles.tableCell}>{item.trackNumber}</Text>
-      <Text style={styles.tableCell}>
-        {typeof item.totalAmount === 'number' ? item.totalAmount.toFixed(2) : '-'}
-      </Text>
-      <Text style={styles.tableCell}>{item.buyerNote || '-'}</Text>
-      <Text style={styles.tableCell}>{item.shippingInfo || '-'}</Text>
-      <TouchableOpacity style={styles.actionCell}>
+  const renderItem = (item) => (
+  <TouchableOpacity
+    key={item.id}
+    onPress={() => setSelectedId(item.id)}
+    style={[
+      styles.tableRow,
+      selectedId === item.id && styles.selectedRow,
+      
+    ]}
+  >
+    <Text style={styles.tableCell}>{item.id}</Text>
+    <Text style={styles.tableCell}>{item.date}</Text>
+    <Text style={styles.tableCell}>{item.customerName}</Text>
+    <Text style={styles.tableCell}>{item.productName}</Text>
+    <Text style={[styles.tableCell, getStatusStyle(item.status)]}>
+      {item.status}
+    </Text>
+    <Text style={styles.tableCell}>{item.quantity}</Text>
+    <Text style={styles.tableCell}>{item.paymentStatus}</Text>
+    <Text style={styles.tableCell}>
+      {typeof item.totalAmount === 'number' ? item.totalAmount.toFixed(2) : '-'}
+    </Text>
+    <Text style={styles.tableCell}>{item.customerNote || '-'}</Text>
+
+    <View style={[styles.tableCell, { flexDirection: 'row', gap: 10 }]}>
+      <TouchableOpacity onPress={() => console.log('View pressed')}>
         <Feather name="eye" size={18} color="#36234E" />
       </TouchableOpacity>
-    </TouchableOpacity>
-  );
+      <TouchableOpacity onPress={() => console.log('Edit pressed')}>
+        <Feather name="edit-3" size={18} color="#36234E" />
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+);
 
 
-  // Optional: color coding status
   const getStatusStyle = (status) => {
     switch (status) {
       case 'Delivered':
         return { color: 'green', fontWeight: '600' };
       case 'Cancelled':
         return { color: 'red', fontWeight: '600' };
-      case 'Processing':
-        return { color: '#FFA500', fontWeight: '600' }; // orange
+      case 'Pending':
+        return { color: '#FFA500', fontWeight: '600' };
       default:
         return {};
     }
@@ -92,70 +94,86 @@ const OrderTables = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Recent Orders</Text>
 
-      {/* Filter Row */}
-      <View style={styles.topRow}>
-        <View style={styles.halfWidth}>
-          <TouchableOpacity
-            style={styles.dropdownButton}
-            onPress={() => setDropdownVisible(true)}
-          >
-            <Text style={{ color: statusFilter ? '#000' : '#888', fontWeight: '600' }}>
-              {statusFilter}
-            </Text>
-            <Ionicons name="chevron-down" size={16} color="#888" />
-          </TouchableOpacity>
-
-          <Modal
-            transparent
-            visible={dropdownVisible}
-            animationType="fade"
-            onRequestClose={() => setDropdownVisible(false)}
-          >
-            <TouchableOpacity
-              style={styles.modalOverlay}
-              onPress={() => setDropdownVisible(false)}
-              activeOpacity={1}
-            >
-              <View style={styles.dropdown}>
-                {statuses.map((status, idx) => (
-                  <Pressable
-                    key={idx}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setStatusFilter(status);
-                      setDropdownVisible(false);
-                    }}
-                  >
-                    <Text style={{ fontWeight: status === statusFilter ? '700' : '400' }}>
-                      {status}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+      {/* Filters */}
+      <View style={{ gap: 10, marginBottom: 20 }}>
+        {/* Search */}
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={20} color="#888" />
+          <TextInput
+            placeholder="Search by customer name"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchInput}
+            placeholderTextColor="#999"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#888" />
             </TouchableOpacity>
-          </Modal>
+          )}
         </View>
 
-        <View style={[styles.searchBox, styles.halfWidth]}>
-            <Ionicons name="search" size={20} color="#888" />
-            <TextInput
-                placeholder="Search by customer or product"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={styles.searchInput}
-                placeholderTextColor="#999"
-                autoCorrect={false}
-                autoCapitalize="none"
-                returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#888" />
-                </TouchableOpacity>
-            )}
-            </View>
+        {/* Dropdowns */}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {/* Order Status Dropdown */}
+         {/* Order Status Dropdown */}
+<TouchableOpacity
+  style={styles.dropdownButton}
+  onPress={() => setActiveDropdown(activeDropdown === 'order' ? null : 'order')}
+>
+  <Text style={{ color: '#000', fontWeight: '600' }}>
+    {orderStatusFilter === 'All' ? 'Order Status' : orderStatusFilter}
+  </Text>
+  <Ionicons name="chevron-down" size={16} color="#888" />
+</TouchableOpacity>
 
+{/* Payment Status Dropdown */}
+<TouchableOpacity
+  style={styles.dropdownButton}
+  onPress={() => setActiveDropdown(activeDropdown === 'payment' ? null : 'payment')}
+>
+  <Text style={{ color: '#000', fontWeight: '600' }}>
+    {paymentStatusFilter === 'All' ? 'Payment Status' : paymentStatusFilter}
+  </Text>
+  <Ionicons name="chevron-down" size={16} color="#888" />
+</TouchableOpacity>
+
+        </View>
       </View>
+
+      {/* Dropdown Modal */}
+      <Modal transparent visible={!!activeDropdown} animationType="fade">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPress={() => setActiveDropdown(null)}
+          activeOpacity={1}
+        >
+          <View style={styles.dropdown}>
+            {(activeDropdown === 'order'
+              ? ['All', 'Delivered', 'Pending', 'Cancelled', 'Returned']
+              : ['All', 'Paid', 'Unpaid', 'Refunded']
+            ).map((status, idx) => (
+              <Pressable
+                key={idx}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  if (activeDropdown === 'order') {
+                    setOrderStatusFilter(status);
+                  } else {
+                    setPaymentStatusFilter(status);
+                  }
+                  setActiveDropdown(null);
+                }}
+              >
+                <Text style={{ fontWeight: '500' }}>{status}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Table */}
       <ScrollView
@@ -165,7 +183,6 @@ const OrderTables = () => {
       >
         <View style={{ minWidth: 1200 }}>
           {renderHeader()}
-          {/* Replace FlatList with map */}
           {filteredData.map(item => renderItem(item))}
         </View>
       </ScrollView>
@@ -185,17 +202,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
     color: '#36234E',
-    fontFamily:'mbold'
+    fontFamily: 'mbold',
   },
-  topRow: {
+  searchBox: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'white',
+    height: 52,
   },
-  halfWidth: {
+  searchInput: {
     flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#444',
   },
   dropdownButton: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -204,7 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     height: 52,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'white',
   },
   modalOverlay: {
     flex: 1,
@@ -222,22 +248,6 @@ const styles = StyleSheet.create({
   dropdownItem: {
     paddingVertical: 12,
     paddingHorizontal: 15,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#bbb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#FAFAFA',
-    height: 52,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#444',
   },
   tableRow: {
     flexDirection: 'row',
