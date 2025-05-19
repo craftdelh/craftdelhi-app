@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   SafeAreaView,
   StyleSheet,
@@ -14,18 +15,19 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Logo1 from '../../assets/images/logo1.svg';
+import { useUser } from '../../context/UserContext';
 
 const Signin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-
+  const { setUser } = useUser();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmailValid = emailRegex.test(username.trim());
   const isFormValid = isEmailValid && password.trim() !== '';
 
-  const handleLogin = () => {
+  const handleLogin = async() => {
     if (!isEmailValid) {
       setError('Please enter a valid email address');
       return;
@@ -36,13 +38,33 @@ const Signin = () => {
       return;
     }
 
-    if (username !== 'buyer@gmail.com' || password !== 'buyer123') {
+    let userData = null;
+
+     if (username === 'abhinav@gmail.com' && password === 'abhinav123') {
+      userData = {
+        name: 'Abhinav',
+        email: 'abhinav@gmail.com',
+        isSeller: false,
+      };
+    } else if (username === 'rajesh@gmail.com' && password === 'rajesh123') {
+      userData = {
+        name: 'Rajesh',
+        email: 'rajesh@gmail.com',
+        isSeller: true,
+      };
+    } else {
       setError('There seems to be an issue with your username or password');
       return;
     }
 
-    setError('');
-    router.replace('/(tabs)/Home')
+     try {
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setError('');
+      router.replace('/(tabs)/Home');
+    } catch (err) {
+      console.error('Error storing user data:', err);
+    }
    
   };
 

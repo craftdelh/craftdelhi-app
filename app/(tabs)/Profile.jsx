@@ -16,6 +16,8 @@ import Logout from '../../assets/images/logout.svg'
 import { useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser } from '../../context/UserContext';
 
 const menuItems = [
   { label: 'Profile Setting', route: '/profile/ProfileSetting' },
@@ -29,10 +31,17 @@ const menuItems = [
 const Profile = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
+const { setUser } = useUser();
 
-  const handleLogout = () => {
-    setModalVisible(false);
-    router.push('/(tabs)/Home'); 
+  const handleLogout = async() => {
+    try {
+    await AsyncStorage.removeItem('user'); 
+    setUser(null); 
+    router.replace('/auth/Signin'); 
+  } catch (err) {
+    console.error('Error removing user data:', err);
+  }
+
   };
     const cart = useSelector(state => state.cart.cart);
   const cartCount = cart?.length ?? 0;

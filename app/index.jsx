@@ -2,10 +2,12 @@ import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import Login from '../components/Login'
+import { useUser } from "../context/UserContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 export default function Index() {
-  const [user, setUser] = useState(false);
+  const { user, setUser } = useUser();
   const [loading, setLoading] = useState(false);
 
   // useEffect(() => {
@@ -15,6 +17,20 @@ export default function Index() {
   //   });
   //   return unsubscribe;
   // }, []);
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          setUser(JSON.parse(userData)); 
+        }
+      } catch (err) {
+        console.error("Failed to load user from AsyncStorage", err);
+      }
+      setLoading(false);
+    };
+    checkLogin();
+  }, []);
 
   if (loading) {
     return (

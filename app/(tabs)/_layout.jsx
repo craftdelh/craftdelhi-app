@@ -6,11 +6,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSelector } from 'react-redux';
+import { useUser } from '../../context/UserContext';
 
 export default function TabLayout() {
   const cart = useSelector(state => state.cart.cart);
   const cartCount = cart?.length ?? 0;
 
+  const { user } = useUser();
+console.log(user?.name, user?.isSeller);
   return (
     <Tabs
       screenOptions={{
