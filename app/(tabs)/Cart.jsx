@@ -1,5 +1,5 @@
 // ... imports
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image, SafeAreaView } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native'
 import React, { useState } from 'react'
 import Emptycart from '../../assets/images/emptycart.svg'
 import Location from '../../assets/images/location.svg'
@@ -10,6 +10,7 @@ import { router } from 'expo-router'
 import { useDispatch, useSelector } from 'react-redux';
 import { decrementQuantity, incrementQuantity, removeFromCart } from '../../redux/CartReducer'
 import * as Haptics from 'expo-haptics';
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 
 const Cart = () => {
@@ -31,7 +32,7 @@ const Cart = () => {
 
 
   return (
-    <SafeAreaView style={{ backgroundColor: 'white', flex: 1 }}>
+    <View style={{ backgroundColor: 'white', flex: 1 }}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Cart</Text>
       </View>
@@ -159,7 +160,7 @@ const Cart = () => {
           <View style={{ marginTop: 30 }} />
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 

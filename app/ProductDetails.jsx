@@ -1,4 +1,4 @@
-import { Animated, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Animated,  StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useRef } from 'react'
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { addToCart } from '../redux/CartReducer';
 import ActionSheet from 'react-native-actions-sheet';
 import Toast from 'react-native-toast-message';
 import BuyNow from '../components/BuyNow';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProductDetails = () => {
     const actionSheetRef = useRef(null);
@@ -37,7 +38,7 @@ const ProductDetails = () => {
     // console.log('cart',cart)
 
   return (
-    <SafeAreaView style={{backgroundColor:'white',flex:1}}>
+    <View style={{backgroundColor:'white',flex:1}}>
          <View style={styles.header}>
              <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="black" />
@@ -113,7 +114,7 @@ const ProductDetails = () => {
  <ActionSheet ref={actionSheetRef}>
       <BuyNow onClose={()=>actionSheetRef.current?.hide()} item={item}/>
     </ActionSheet>
-    </SafeAreaView>
+    </View>
   )
 }
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Animatable from 'react-native-animatable';
 import { router } from 'expo-router';
 import ProfileHeader from './ProfileHeader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileSetting = () => {
   const [profileImage, setProfileImage] = useState(null);
@@ -65,7 +66,7 @@ const ProfileSetting = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -221,7 +222,7 @@ const ProfileSetting = () => {
           </Animatable.View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

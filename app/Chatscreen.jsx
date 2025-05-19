@@ -9,13 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  SafeAreaView,
+  
   Image,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Upload from '../assets/images/upload.svg';
 import * as ImagePicker from 'expo-image-picker';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Chatscreen = () => {
   const { id, name } = useLocalSearchParams();
@@ -96,7 +97,7 @@ const Chatscreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -192,7 +193,7 @@ const Chatscreen = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

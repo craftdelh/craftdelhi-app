@@ -4,7 +4,7 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
+  
   Modal,
 } from 'react-native';
 import * as Animatable from 'react-native-animatable';
@@ -14,6 +14,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import Logout from '../../assets/images/logout.svg'
 import { useSelector } from 'react-redux';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 
 const menuItems = [
   { label: 'Profile Setting', route: '/profile/ProfileSetting' },
@@ -36,7 +38,7 @@ const Profile = () => {
   const cartCount = cart?.length ?? 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity >
           
@@ -147,7 +149,7 @@ const Profile = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -157,6 +159,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop:Platform.OS==='ios'?10:0
   },
   header: {
     paddingHorizontal: 20,

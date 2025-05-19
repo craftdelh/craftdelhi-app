@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
-  SafeAreaView,
-  StyleSheet,
+   StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -18,6 +17,7 @@ import PaymentOPtions from '../components/PaymentOPtions';
 import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
 import { cleanCart } from '../redux/CartReducer';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PlaceOrder = () => {
   const [promoCode, setPromoCode] = useState('');
@@ -81,7 +81,7 @@ const [orderId] = useState('12231232132134444444');
  const totalAmount = Math.max(0, totalProductAmount + shippingFee - discount);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.innerContainer}>
@@ -201,7 +201,7 @@ const [orderId] = useState('12231232132134444444');
   </View>
 )}
 
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -1,10 +1,11 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import {  ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import ProfileHeader from './ProfileHeader';
 import ActionSheet from 'react-native-actions-sheet';
 import ReturnInfo from './ReturnInfo';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const returnOrders = [
   {
@@ -66,7 +67,7 @@ const ReturnOrder = () => {
 
   }
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ProfileHeader />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>Return Orders</Text>
@@ -126,7 +127,7 @@ const ReturnOrder = () => {
       <ActionSheet ref={AnimateSheetRef}>
   <ReturnInfo order={selectInfo} onClose={() => AnimateSheetRef.current?.hide()} />
 </ActionSheet>
-    </SafeAreaView>
+    </View>
   );
 };
 

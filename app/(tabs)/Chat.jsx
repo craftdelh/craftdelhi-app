@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
+  
   StyleSheet,
   Text,
   View,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const DUMMY_DATA = [
@@ -51,7 +52,7 @@ const Chat = () => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>My Chats</Text>
       </View>
@@ -90,7 +91,7 @@ const Chat = () => {
         renderItem={renderItem}
         contentContainerStyle={styles.chatList}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

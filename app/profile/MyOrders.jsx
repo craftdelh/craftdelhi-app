@@ -4,7 +4,7 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  SafeAreaView,
+  
   StyleSheet,
   FlatList,
 } from 'react-native';
@@ -17,6 +17,7 @@ import TrackOrder from './TrackOrder';
 import Book from '../../assets/images/book.svg'
 import ReturnOrderRequest from './ReturnOrderRequest';
 import WriteReview from './WriteReview';
+import { SafeAreaView } from 'react-native-safe-area-context';
 const orders = [
   {
     id: '1',
@@ -157,7 +158,7 @@ const reviewSheetRef = useRef(null);
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ProfileHeader />
       <FlatList
         data={visibleOrders}
@@ -194,7 +195,7 @@ const reviewSheetRef = useRef(null);
   <WriteReview order={selectedReview} onClose={() => reviewSheetRef.current?.hide()} />
 </ActionSheet>
 
-    </SafeAreaView>
+    </View>
   );
 };
 

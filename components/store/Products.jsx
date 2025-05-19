@@ -123,7 +123,7 @@ const Products = () => {
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={styles.title}>Categories</Text>
+      <Text style={styles.headertitle}>Categories</Text>
       <FlatList
         data={categories}
         renderItem={renderCategory}
@@ -154,7 +154,7 @@ const Products = () => {
 export default Products;
 
 const styles = StyleSheet.create({
-  title: {
+  headertitle: {
     fontFamily: 'mbold',
     fontSize: 16,
     marginBottom: 5,

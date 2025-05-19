@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React from 'react'
 import { Feather, Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderBottomColor: '#eee',
     borderBottomWidth: 1,
+    paddingTop:Platform.OS==='ios'?5:0
   },
   headerTitle: {
     fontSize: 18,

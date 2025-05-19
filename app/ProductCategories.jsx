@@ -1,5 +1,5 @@
 import {
-  SafeAreaView,
+  
   StyleSheet,
   Text,
   View,
@@ -16,6 +16,7 @@ import { products } from '../data';
 import { router } from 'expo-router';
 import ActionSheet from 'react-native-actions-sheet';
 import Filter from '../components/Filter';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const categories = [
   { name: 'Handmade Paper', image: require('../assets/images/image1.png') },
@@ -116,7 +117,7 @@ const filteredProducts = products
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -193,7 +194,7 @@ const filteredProducts = products
 />
 
     </ActionSheet>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -201,7 +202,7 @@ export default ProductCategories;
 
 const styles = StyleSheet.create({
   header: {
-    height: 60,
+    height: 50,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

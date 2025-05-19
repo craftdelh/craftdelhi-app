@@ -8,6 +8,7 @@ import { Provider } from 'react-redux';
 import { store, persistor } from '../store'; 
 import { PersistGate } from 'redux-persist/integration/react';
 import Toast from 'react-native-toast-message';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -38,10 +39,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          <Stack screenOptions={{ headerShown: false }}>
+          <SafeAreaView style={{flex:1}}>
+            <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(tabs)" />
           </Stack>
+          </SafeAreaView>
             <Toast />
             </PersistGate>
        </Provider>

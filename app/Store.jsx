@@ -1,6 +1,6 @@
 import {
   Image,
-  SafeAreaView,
+  
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,12 +15,13 @@ import storeimage from '../assets/images/storeimage.png';
 import Products from '../components/store/Products';
 import Search from '../components/Search';
 import Chatnow from '../assets/images/chatnow.svg'
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Store = () => {
   const [active, setActive] = useState('products');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -121,7 +122,7 @@ const Store = () => {
   </TouchableOpacity>
 </View>
 
-    </SafeAreaView>
+    </View>
   );
 };
 

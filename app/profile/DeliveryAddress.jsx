@@ -1,6 +1,5 @@
 import {
-  SafeAreaView,
-  StyleSheet,
+   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -15,6 +14,7 @@ import React, { useState } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import ProfileHeader from './ProfileHeader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const indianCities = [
   "Agra",
@@ -80,7 +80,7 @@ const DeliveryAddress = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -204,7 +204,7 @@ const DeliveryAddress = () => {
           </View>
         </Modal>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

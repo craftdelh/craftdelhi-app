@@ -24,7 +24,6 @@ export default function TabLayout() {
         tabBarInactiveTintColor: 'rgba(255,255,255,0.5)',
         tabBarLabelStyle: {
           fontSize: 12,
-          marginBottom: 4,
         },
       }}
     >

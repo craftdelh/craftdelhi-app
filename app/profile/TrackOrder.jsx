@@ -1,12 +1,13 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView } from 'react-native';
+import {  StyleSheet, Text, TouchableOpacity, View, Image, ScrollView } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TrackOrder = ({ order, onClose }) => {
   if (!order) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
      <ScrollView>
        {/* Header */}
       <View style={styles.header}>
@@ -51,7 +52,7 @@ const TrackOrder = ({ order, onClose }) => {
         <Text></Text>
       </View>
      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

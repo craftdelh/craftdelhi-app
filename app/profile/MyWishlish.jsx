@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  SafeAreaView,
+  
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import ProfileHeader from './ProfileHeader';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromWishlist } from '../../redux/WishListReducer';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
@@ -23,7 +24,7 @@ const MyWishlist = () => {
   const wishlist = useSelector((state) => state.wishlist.wishlist);
   // console.log('wiwiwi',wishlist);
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ProfileHeader />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>My Wishlist</Text>
@@ -78,7 +79,7 @@ const MyWishlist = () => {
 
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
