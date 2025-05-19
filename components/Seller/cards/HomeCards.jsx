@@ -1,32 +1,62 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import { LinearGradient } from 'expo-linear-gradient'
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const HomeCards = ({ cardsData }) => {
+  const animations = useRef(cardsData.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    animations.forEach(anim => anim.setValue(0));
+    const animationsSequence = animations.map((anim, index) =>
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 500,
+        delay: index * 150,
+        useNativeDriver: true,
+      })
+    );
+    Animated.stagger(100, animationsSequence).start();
+  }, [cardsData]); 
+
   return (
     <View>
-      {cardsData.map((card, index) => (
-        <LinearGradient
-          key={index}
-          colors={card.colors}
-          style={[styles.card, index === 0 && { marginTop: -5 }]}
-        >
-          <View style={styles.iconContainer}>
-            {card.icon}
-          </View>
+      {cardsData.map((card, index) => {
+        const translateY = animations[index].interpolate({
+          inputRange: [0, 1],
+          outputRange: [20, 0],
+        });
 
-          <View style={styles.textSection}>
-            <Text style={styles.title}>{card.title}</Text>
-            <Text style={styles.count}>{card.count}</Text>
-            <Text style={styles.change}>{card.change}</Text>
-          </View>
-        </LinearGradient>
-      ))}
+        const opacity = animations[index];
+
+        return (
+          <Animated.View
+            key={index}
+            style={{
+              opacity,
+              transform: [{ translateY }],
+            }}
+          >
+            <LinearGradient
+              colors={card.colors}
+              style={[styles.card, index === 0 && { marginTop: -5 }]}
+            >
+              <View style={styles.iconContainer}>{card.icon}</View>
+
+              <View style={styles.textSection}>
+                <Text style={styles.title}>{card.title}</Text>
+                <Text style={styles.count}>{card.count}</Text>
+                <Text style={styles.change}>{card.change}</Text>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        );
+      })}
     </View>
-  )
-}
+  );
+};
 
-export default HomeCards
+export default HomeCards;
+
 
 const styles = StyleSheet.create({
      card: {
