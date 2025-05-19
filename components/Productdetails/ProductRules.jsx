@@ -4,6 +4,10 @@ import Delivery from '../../assets/images/delivery1.svg';
 import Rating from '../../assets/images/rating.svg';
 import Return from '../../assets/images/return.svg';
 import { Entypo } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import ActionSheet from 'react-native-actions-sheet';
+import RulesandService from '../Features/RulesandService';
+import DeliveryConfirm from '../Features/DeliveryConfirm';
 
 const ProductRules = () => {
   const guaranteedDate = new Date();
@@ -11,6 +15,8 @@ const ProductRules = () => {
   const options = { day: 'numeric', month: 'short' };
   const guaranteedDateStr = guaranteedDate.toLocaleDateString('en-US', options);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+   const actionSheetRef = useRef(null);
+   const deliverySheetRef = useRef(null)
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -27,13 +33,13 @@ const ProductRules = () => {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <TouchableOpacity style={styles.ruleRow} onPress={() => onPressRule('Return Policy')}>
+      <TouchableOpacity style={styles.ruleRow} onPress={()=>actionSheetRef.current?.show()}>
         <Return width={25} height={25} />
         <Text style={styles.ruleText}>14 days Easy return policy</Text>
         <Entypo name="chevron-right" size={24} color="black" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.ruleRow} onPress={() => onPressRule('Guarantee')}>
+      <TouchableOpacity style={styles.ruleRow} onPress={() => deliverySheetRef.current?.show()}>
         <Delivery width={25} height={25} />
         
         <View style={{ flex: 1, marginLeft: 12 }}>
@@ -47,11 +53,19 @@ const ProductRules = () => {
         </TouchableOpacity>
 
 
-      <TouchableOpacity style={styles.ruleRow} onPress={() => onPressRule('Ratings & Reviews')}>
+      <TouchableOpacity style={styles.ruleRow} onPress={() => router.push('/ReviewSections')}>
         <Rating width={25} height={25} />
         <Text style={styles.ruleText}>Ratings & Reviews</Text>
         <Entypo name="chevron-right" size={24} color="black" />
       </TouchableOpacity>
+
+             <ActionSheet ref={actionSheetRef}>
+            <RulesandService onClose={()=>actionSheetRef.current?.hide()}/>
+          </ActionSheet>
+
+          <ActionSheet ref={deliverySheetRef}>
+            <DeliveryConfirm onClose={()=>deliverySheetRef.current?.hide()}/>
+          </ActionSheet>
     </Animated.View>
   );
 };
