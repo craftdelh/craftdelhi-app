@@ -61,7 +61,12 @@ const Signin = () => {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       setError('');
-      router.replace('/(tabs)/Home');
+     if (userData.isSeller) {
+  router.replace('/(sellerTab)/(sellerTabs)/Home');
+} else {
+  router.replace('/(tabs)/Home');
+}
+
     } catch (err) {
       console.error('Error storing user data:', err);
     }

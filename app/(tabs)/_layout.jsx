@@ -12,8 +12,10 @@ export default function TabLayout() {
   const cart = useSelector(state => state.cart.cart);
   const cartCount = cart?.length ?? 0;
 
-  const { user } = useUser();
-console.log(user?.name, user?.isSeller);
+//   const { user } = useUser();
+  
+// console.log(user?.name, user?.isSeller);
+
   return (
     <Tabs
       screenOptions={{
