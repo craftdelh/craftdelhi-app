@@ -5,7 +5,7 @@ import Login from '../components/Login'
 
 
 export default function Index() {
-  const [user, setUser] = useState(true);
+  const [user, setUser] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // useEffect(() => {
