@@ -34,27 +34,6 @@ export default function Layout() {
           drawerIcon: ({ color }) => <MaterialIcons name="payment" size={22} color={color} />,
         }}
       />
-      <Drawer.Screen
-        name="profile-setting"
-        options={{
-          drawerLabel: 'Profile Setting',
-          drawerIcon: ({ color }) => <Ionicons name="person-outline" size={22} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="store-setting"
-        options={{
-          drawerLabel: 'Store Setting',
-          drawerIcon: ({ color }) => <MaterialIcons name="store" size={22} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="account"
-        options={{
-          drawerLabel: 'My Account',
-          drawerIcon: ({ color }) => <Ionicons name="person-circle-outline" size={22} color={color} />,
-        }}
-      />
     </Drawer>
   );
 }
