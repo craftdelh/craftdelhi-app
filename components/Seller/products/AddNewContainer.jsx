@@ -1,0 +1,400 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Video } from 'expo-av';
+import sample from '../../../assets/images/sample.png';
+import { Picker } from '@react-native-picker/picker'; 
+
+export default function App() {
+  const [description, setDescription] = useState('');
+ const [productName, setProductName] = useState('');
+const [price, setPrice] = useState('');
+const [category, setCategory] = useState('');
+const [dimensions, setDimensions] = useState('');
+const [reelName, setReelName] = useState('');
+const [packageWeight, setPackageWeight] = useState('');
+  const [weightUnit, setWeightUnit] = useState('kg'); 
+  const [warrantyType, setWarrantyType] = useState('No Warranty')
+  const [mainMedia, setMainMedia] = useState(null);
+  const [videoUri, setVideoUri] = useState(null);
+  const [additionalImages, setAdditionalImages] = useState([null, null, null, null]);
+
+  const pickImage = async (index = null) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      const uri = result.assets[0].uri;
+      if (index !== null) {
+        const updatedImages = [...additionalImages];
+        updatedImages[index] = uri;
+        setAdditionalImages(updatedImages);
+      } else {
+        setMainMedia(uri);
+      }
+    }
+  };
+
+ const pickVideo = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+    quality: 1,
+  });
+
+  if (!result.canceled && result.assets?.[0]?.uri) {
+    setVideoUri(result.assets[0].uri);
+  }
+};
+useEffect(() => {
+  (async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Sorry, we need media library permissions to make this work!');
+    }
+  })();
+}, []);
+
+
+  const renderInputBlock = (label, value, setValue, keyboardType = 'default', multiline = false, placeholder = '') => (
+    <View style={styles.inputBlock}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={multiline ? styles.textArea : styles.inputBox}>
+        <TextInput
+          style={[styles.inputText, multiline && { textAlignVertical: 'top' }]}
+          value={value}
+          onChangeText={setValue}
+          keyboardType={keyboardType}
+          multiline={multiline}
+          placeholder={placeholder}
+        />
+        {multiline && <Text style={styles.charCount}>{value.length}/300</Text>}
+      </View>
+    </View>
+  );
+
+  return (
+     <KeyboardAvoidingView
+    style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+           keyboardVerticalOffset={100}
+  >
+
+    
+   <ScrollView 
+   contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+        
+>
+
+     {renderInputBlock('PRODUCT NAME', productName, setProductName, 'default', false, 'The Ultimate Celebration Box')}
+      
+      <View style={styles.uploadRow}>
+        <Image source={mainMedia ? { uri: mainMedia } : sample} style={styles.thumbnailTall} />
+        <View style={styles.uploadDetails}>
+          <Text style={styles.uploadText}>Min size: 480x480 px. Max video length: 60 seconds. Max file size: 100MB. Supported Format: mp4</Text>
+          <View style={styles.chooseFileBox}>
+            <TouchableOpacity style={styles.chooseFileButton} onPress={() => pickImage()}>
+              <Text style={styles.chooseFileText}>Choose File</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.sectionTitle}>Additional Images :</Text>
+      {additionalImages.map((img, i) => (
+        <View key={i} style={styles.imageCard}>
+          <View style={styles.uploadRow}>
+            <Image source={img ? { uri: img } : sample} style={styles.thumbnail} />
+            <View style={styles.uploadDetails}>
+              <View style={styles.chooseFileBox}>
+                <TouchableOpacity style={styles.chooseFileButton} onPress={() => pickImage(i)}>
+                  <Text style={styles.chooseFileText}>Choose File</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      ))}
+
+      <Text style={styles.sectionTitle}>Product Details :</Text>
+      {renderInputBlock('DESCRIPTION', description, setDescription, 'default', true, 'Enter description')}
+      {renderInputBlock('PRICE', price, setPrice, 'numeric', false, 'Rs 2000')}
+      {renderInputBlock('CATEGORIES (for Filtering)', category, setCategory, 'default', false, 'Hand Made Craft')}
+      {renderInputBlock('PRODUCT DIMENSION (Length, Width, Height) Optional', dimensions, setDimensions, 'default', false, '20 x 15 x 10 cm')}
+      {renderInputBlock('PRODUCT DIMENSION (Length, Width, Height) Optional', dimensions, setDimensions)}
+
+      <Text style={styles.sectionTitle}>Video Upload :</Text>
+      {renderInputBlock('REEL NAME', reelName, setReelName, 'default', false, 'The Ultimate Celebration Box')}
+
+      <View style={styles.uploadRow}>
+        {videoUri ? (
+  <Video
+    source={{ uri: videoUri }}
+    style={styles.thumbnailTall}
+    useNativeControls
+    resizeMode="cover"
+    isLooping
+  />
+) : (
+  <Image source={{ uri: 'https://placehold.co/100x158' }} style={styles.thumbnailTall} />
+)}
+
+        <View style={styles.uploadDetails}>
+          <Text style={styles.uploadText}>Min size: 480x480 px. Max video length: 60 seconds. Max file size: 100MB. Supported Format: mp4</Text>
+          <View style={styles.chooseFileBox}>
+            <TouchableOpacity style={styles.chooseFileButton} onPress={pickVideo}>
+              <Text style={styles.chooseFileText}>Choose File</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      <View style={{ marginTop: 10 }}>
+      <Text style={{ fontFamily: 'mbold', fontSize: 17 }}>Shipping & Warranty :</Text>
+      <Text style={{ fontFamily: 'mbold', fontSize: 22, marginTop: 10 }}>Shipping & Warranty</Text>
+
+      <View style={styles.divider} />
+
+      {/* Package Weight Input */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.slabel}>Package Weight</Text>
+        <View style={styles.sinputBox}>
+          <TextInput
+            value={packageWeight}
+            onChangeText={setPackageWeight}
+            keyboardType="numeric"
+            style={styles.sinputText}
+          />
+        </View>
+      </View>
+
+      {/* Select Gram/Kg Dropdown */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.slabel}>Select Gram/Kg</Text>
+        <View style={styles.sinputBox}>
+          <Picker
+            selectedValue={weightUnit}
+            onValueChange={(itemValue) => setWeightUnit(itemValue)}
+            style={Platform.OS === 'ios' ? { height:200 } : { height: 40 }}
+            dropdownIconColor="black"
+          >
+            <Picker.Item label="KG" value="kg" />
+            <Picker.Item label="Gram" value="gram" />
+          </Picker>
+        </View>
+      </View>
+
+      {/* Warranty Type Dropdown */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.slabel}>Warranty Type</Text>
+        <View style={styles.sinputBox}>
+          <Picker
+            selectedValue={warrantyType}
+            onValueChange={(itemValue) => setWarrantyType(itemValue)}
+            style={Platform.OS === 'ios' ? { height: 250 } : { height: 40 }}
+            dropdownIconColor="black"
+          >
+            <Picker.Item label="No Warranty" value="No Warranty" />
+            <Picker.Item label="6 months" value="6 months" />
+            <Picker.Item label="1 year" value="1 year" />
+            <Picker.Item label="2 years" value="2 years" />
+          </Picker>
+        </View>
+      </View>
+    </View> 
+
+    <View style={styles.buttonsContainer}>
+        <TouchableOpacity style={styles.cancelButton}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.addButton}>
+          <Text style={styles.addText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+    backgroundColor: '#f9f9f9',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+    color: 'black',
+  },
+  inputBlock: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+    color: 'black',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  inputBox: {
+    backgroundColor: 'white',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E0E4F4',
+    paddingHorizontal: 12,
+    height: 56,
+    justifyContent: 'center',
+  },
+  inputText: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: 'Montserrat',
+    color: 'black',
+    flex: 1,
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    gap: 20,
+    alignItems: 'center',
+  },
+  thumbnail: {
+    width: 100,
+    height: 118,
+    borderWidth: 1,
+    borderColor: '#ECF0FF',
+  },
+  thumbnailTall: {
+    width: 100,
+    height: 158,
+    borderWidth: 1,
+    borderColor: '#ECF0FF',
+  },
+  uploadDetails: {
+    flex: 1,
+    gap: 10,
+  },
+  uploadText: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Montserrat',
+    color: 'black',
+    lineHeight: 20,
+  },
+  chooseFileBox: {
+    backgroundColor: '#ECF0FF',
+    borderRadius: 5,
+    padding: 10,
+    alignItems: 'flex-end',
+  },
+  chooseFileButton: {
+    backgroundColor: '#024A63',
+    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  chooseFileText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Montserrat',
+  },
+  imageCard: {
+    backgroundColor: 'white',
+    borderRadius: 5,
+    borderColor: '#E0E4F4',
+    borderWidth: 1,
+    padding: 20,
+    marginBottom: 10,
+  },
+  textArea: {
+    backgroundColor: 'white',
+    borderRadius: 4,
+    borderColor: '#D9D9D9',
+    borderWidth: 1,
+    padding: 16,
+    gap: 16,
+    height: 120,
+  },
+  charCount: {
+    textAlign: 'right',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+    color: 'black',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#D9D9D9',
+    marginVertical: 8,
+  },
+  fieldContainer: {
+    marginBottom: 16,
+  },
+    slabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Montserrat',
+    color: 'black',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  sinputBox: {
+    backgroundColor: 'white',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E0E4F4',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+  sinputText: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: 'Montserrat',
+    color: 'black',
+    height: 40,
+  },
+   buttonsContainer: {
+    flexDirection: 'row',
+    gap: 8,       
+    justifyContent:'flex-end'             
+  },
+  cancelButton: {
+    padding: 16,
+    backgroundColor: '#BBBBBB',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  addButton: {
+    width: 80,
+    padding: 16,
+    backgroundColor: '#024A63',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontFamily: 'Montserrat',
+    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 16,
+    color: '#151618',
+    textAlign: 'center',
+  },
+  addText: {
+    fontFamily: 'Montserrat',
+    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 16,
+    color: 'white',
+    textAlign: 'center',
+  },
+});

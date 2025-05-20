@@ -1,6 +1,7 @@
 import { Drawer } from 'expo-router/drawer';
 import { Ionicons, MaterialIcons, FontAwesome5, Entypo } from '@expo/vector-icons';
 import React from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Layout() {
   return (
@@ -32,6 +33,13 @@ export default function Layout() {
         options={{
           drawerLabel: 'Payments',
           drawerIcon: ({ color }) => <MaterialIcons name="payment" size={22} color={color} />,
+        }}
+      />
+      <Drawer.Screen
+        name="AddNewProduct"
+        options={{
+          drawerLabel: 'Add New Product',
+          drawerIcon: ({ color }) => <MaterialCommunityIcons name="plus-box-multiple-outline" size={22} color={color} />,
         }}
       />
     </Drawer>

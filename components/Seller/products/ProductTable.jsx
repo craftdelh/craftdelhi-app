@@ -16,6 +16,7 @@ import ActionSheet from "react-native-actions-sheet";
 import RejectionReason from './RejectionReason';
 import Delete from '../../../assets/images/delete.svg'
 import Toast from 'react-native-toast-message';
+import { router } from 'expo-router';
 
 const ProductTable = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,7 +161,7 @@ const [productToDelete, setProductToDelete] = useState(null);
         <View style={{ alignItems: 'flex-end', marginVertical: 12 }}>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => console.log('Add New Product')}
+            onPress={() => router.push('/(sellerTab)/AddNewProduct')}
           >
             <AntDesign name="pluscircleo" size={18} color="white" />
             <Text style={styles.addButtonText}>Add New Product</Text>
