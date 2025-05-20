@@ -58,7 +58,7 @@ export default OrderSummary;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 50,
+    marginTop: 20,
   },
   header: {
     fontFamily: 'mbold',
