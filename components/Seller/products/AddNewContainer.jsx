@@ -5,7 +5,7 @@ import { Video } from 'expo-av';
 import sample from '../../../assets/images/sample.png';
 import { Picker } from '@react-native-picker/picker'; 
 
-export default function App() {
+export default function AddNewContainer() {
   const [description, setDescription] = useState('');
  const [productName, setProductName] = useState('');
 const [price, setPrice] = useState('');
@@ -75,12 +75,6 @@ useEffect(() => {
   );
 
   return (
-     <KeyboardAvoidingView
-    style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-           keyboardVerticalOffset={100}
-  >
-
     
    <ScrollView 
    contentContainerStyle={{ paddingBottom: 20 }}
@@ -214,7 +208,7 @@ useEffect(() => {
         </TouchableOpacity>
       </View>
     </ScrollView>
-    </KeyboardAvoidingView>
+
   );
 }
 
@@ -228,17 +222,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Montserrat',
     color: 'black',
+    marginVertical:10
   },
   inputBlock: {
     gap: 8,
   },
   label: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     fontFamily: 'Montserrat',
     color: 'black',
     textTransform: 'uppercase',
     letterSpacing: 1,
+    marginTop:5
   },
   inputBox: {
     backgroundColor: 'white',
@@ -260,6 +256,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
     alignItems: 'center',
+    marginVertical:10
   },
   thumbnail: {
     width: 100,

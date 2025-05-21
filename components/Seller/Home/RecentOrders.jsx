@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,19 @@ import {
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { dummyOrders } from '../../../sellerdata';
+import ActionSheet from "react-native-actions-sheet";
+import SaleSummary from './SaleSummary';
 
 // Add 'All' in statuses for showing all data
 const statuses = ['All Payment Status', 'Delivered', 'Cancelled', 'Processing'];
+
 
 const RecentOrders = () => {
   const [statusFilter, setStatusFilter] = useState('All Payment Status');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const actionSheetRef = useRef(null);
 
   const filteredData = dummyOrders.filter(item => {
   const statusMatch = statusFilter === 'All Payment Status' || item.status === statusFilter;
@@ -29,13 +33,19 @@ const RecentOrders = () => {
     item.productName.toLowerCase().includes(searchQuery.toLowerCase());
   return statusMatch && searchMatch;
 });
+const [selectedOrder, setSelectedOrder] = useState(null);
+
+const handleSaleSummary = (item) => {
+  setSelectedOrder(item);
+  actionSheetRef.current?.show();
+};
 
 
   const renderHeader = () => (
     <View style={[styles.tableRow, styles.headerRow]}>
       {[
         'Order ID', 'Customer Name', 'Product Name', 'Qty', 'Date',
-        'Status', 'Track #', 'Amount', 'Note', 'Shipping', 'Actions'
+        'Status', 'Track #', 'Amount', 'Note', 'Shipping Info', 'Actions'
       ].map((header, idx) => (
         <Text key={idx} style={[styles.tableCell, styles.headerText]}>
           {header}
@@ -62,12 +72,10 @@ const RecentOrders = () => {
         {item.status}
       </Text>
       <Text style={styles.tableCell}>{item.trackNumber}</Text>
-      <Text style={styles.tableCell}>
-        {typeof item.totalAmount === 'number' ? item.totalAmount.toFixed(2) : '-'}
-      </Text>
+      <Text style={styles.tableCell}>{item.totalAmount || '-'}</Text>
       <Text style={styles.tableCell}>{item.buyerNote || '-'}</Text>
       <Text style={styles.tableCell}>{item.shippingInfo || '-'}</Text>
-      <TouchableOpacity style={styles.actionCell}>
+      <TouchableOpacity onPress={()=>handleSaleSummary(item)} style={styles.actionCell}>
         <Feather name="eye" size={18} color="#36234E" />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -169,6 +177,11 @@ const RecentOrders = () => {
           {filteredData.map(item => renderItem(item))}
         </View>
       </ScrollView>
+
+      
+   <ActionSheet ref={actionSheetRef}>
+       <SaleSummary data={selectedOrder} onClose={() => actionSheetRef.current?.hide()} />
+    </ActionSheet>
     </View>
   );
 };
@@ -252,6 +265,8 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     backgroundColor: '#36234E',
+    borderTopLeftRadius:10,
+    borderTopRightRadius:10
   },
   tableCell: {
     width: 110,

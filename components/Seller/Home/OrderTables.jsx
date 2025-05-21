@@ -262,6 +262,8 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     backgroundColor: '#36234E',
+    borderTopLeftRadius:10,
+    borderTopRightRadius:10
   },
   tableCell: {
     width: 110,

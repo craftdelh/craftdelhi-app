@@ -18,6 +18,8 @@ import Delete from '../../../assets/images/delete.svg'
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
 
+
+
 const ProductTable = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
@@ -25,9 +27,11 @@ const ProductTable = () => {
   const [selectedId, setSelectedId] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
    const actionSheetRef = useRef(null);
+   const editSheetRef=useRef(null);
    const [selectedProduct, setSelectedProduct] = useState(null);
    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 const [productToDelete, setProductToDelete] = useState(null);
+
 
 
 
@@ -37,6 +41,8 @@ const [productToDelete, setProductToDelete] = useState(null);
   const categoryMatch = categoryFilter === 'All' || item.teamStatus === categoryFilter;
   return nameMatch && orderMatch && categoryMatch;
 });
+
+
 
 
 
@@ -89,7 +95,13 @@ const [productToDelete, setProductToDelete] = useState(null);
 
 
     <View style={[styles.tableCell, { flexDirection: 'row', gap: 12 }]}>
-        <TouchableOpacity onPress={() => console.log('Edit pressed')}>
+       <TouchableOpacity onPress={() => {
+  router.push({
+    pathname: '/EditProduct',
+    params: { item: JSON.stringify(item) }  
+  });
+}}>
+
             <Feather name="edit-3" size={18} color="#36234E" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => {
@@ -248,6 +260,8 @@ const [productToDelete, setProductToDelete] = useState(null);
     onClose={() => actionSheetRef.current?.hide()}
   />
     </ActionSheet>
+
+
     </View>
   );
 };
@@ -364,6 +378,8 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     backgroundColor: '#36234E',
+    borderTopLeftRadius:10,
+    borderTopRightRadius:10
   },
   tableCell: {
     width: 110,
