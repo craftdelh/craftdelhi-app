@@ -168,6 +168,13 @@ const Signin = () => {
             </Text>
             <TouchableOpacity onPress={() => router.replace('/auth/Signup')}><Text style={styles.signup}>Sign Up</Text></TouchableOpacity>
             </View>
+
+            <View style={{flexDirection:'row',alignItems:'center',justifyContent:'center', gap:5,marginTop:10}}>
+            <Text style={styles.footerText}>
+            Want to Become Seller?
+            </Text>
+            <TouchableOpacity onPress={() => router.replace('/auth/sellerauth/Signup')}><Text style={styles.signup}>Register Here</Text></TouchableOpacity>
+            </View>
             
            
             <Text style={styles.terms}>By continuing, you agree to our</Text>
