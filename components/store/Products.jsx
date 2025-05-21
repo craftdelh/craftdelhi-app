@@ -122,7 +122,7 @@ const Products = () => {
     };
 
   return (
-    <View style={{ padding: 20 }}>
+    <View style={{ padding: 20,marginBottom:50 }}>
       <Text style={styles.headertitle}>Categories</Text>
       <FlatList
         data={categories}

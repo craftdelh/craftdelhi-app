@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { Slot, Stack } from 'expo-router';
+import { Slot, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
@@ -10,6 +10,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserProvider } from '../context/UserContext';
+import { View } from 'react-native';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,6 +24,11 @@ export default function RootLayout() {
   });
 
   const [appReady, setAppReady] = useState(false);
+   const pathname = usePathname();
+
+   const noSafeAreaRoutes = ['/Reels'];
+
+  const shouldUseSafeArea = !noSafeAreaRoutes.includes(pathname);
 
   useEffect(() => {
     if (loaded) {
@@ -34,17 +40,18 @@ export default function RootLayout() {
   if (!appReady) {
     return null; 
   }
+  const Wrapper = shouldUseSafeArea ? SafeAreaView : View;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
            <UserProvider>
-          <SafeAreaView style={{flex:1}}>
+          <Wrapper  style={{flex:1}}>
             <Stack screenOptions={{ headerShown: false }}>
              <Slot />
           </Stack>
-          </SafeAreaView>
+          </Wrapper >
           </UserProvider>
             <Toast />
             </PersistGate>
