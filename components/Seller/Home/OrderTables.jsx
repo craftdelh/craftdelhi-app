@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { Orderinfo } from '../../../sellerdata'; 
+import ActionSheet from "react-native-actions-sheet";
+import OrderActionSheet from './OrderActionSheet';
+import { router } from 'expo-router';
 
 
 const OrderTables = () => {
@@ -20,6 +23,8 @@ const OrderTables = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [selectedId, setSelectedId] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null); 
+  const actionSheetRef = useRef(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const filteredData = Orderinfo.filter(item => {
     const nameMatch = item.customerName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -66,10 +71,18 @@ const OrderTables = () => {
     <Text style={styles.tableCell}>{item.customerNote || '-'}</Text>
 
     <View style={[styles.tableCell, { flexDirection: 'row', gap: 10 }]}>
-      <TouchableOpacity onPress={() => console.log('View pressed')}>
+      <TouchableOpacity onPress={() => {
+  setSelectedOrder(item); 
+  actionSheetRef.current?.show(); 
+}}>
         <Feather name="eye" size={18} color="#36234E" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => console.log('Edit pressed')}>
+      <TouchableOpacity onPress={() => {
+        router.push({
+          pathname: '/EditOrder',
+          params: { item: item }  
+        });
+      }}>
         <Feather name="edit-3" size={18} color="#36234E" />
       </TouchableOpacity>
     </View>
@@ -186,6 +199,10 @@ const OrderTables = () => {
           {filteredData.map(item => renderItem(item))}
         </View>
       </ScrollView>
+
+       <ActionSheet ref={actionSheetRef}>
+      <OrderActionSheet order={selectedOrder} onClose={()=>actionSheetRef.current?.hide()}/>
+    </ActionSheet>
     </View>
   );
 };
@@ -266,7 +283,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius:10
   },
   tableCell: {
-    width: 110,
+    width: 150,
     paddingHorizontal: 8,
     fontSize: 15,
     color: '#333',

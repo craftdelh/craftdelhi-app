@@ -3,9 +3,46 @@ import React from 'react'
 import { Feather } from '@expo/vector-icons'
 import { useNavigation } from 'expo-router';
 import { ScrollView } from 'react-native';
+import HomeCards from '../../components/Seller/cards/HomeCards';
+import Revenue from '../../assets/images/revenue.svg'
+import Cash from '../../assets/images/cash.svg'
+import Amount from '../../assets/images/amount.svg'
+import Balance from '../../assets/images/balance.svg'
+import PaymnetTable from '../../components/Seller/payment/PaymnetTable';
 
-const Paymnets = () => {
+const payments = () => {
   const navigation = useNavigation();
+  const cardsData = [
+        {
+          title: "Total Revenue",
+          count: "Rs 4200.00",
+          change: "No Order Today",
+          colors: ['#FFE2E6', 'white'],
+          icon: <Revenue />
+        },
+        {
+          title: "Pending Payment",
+          count: "Rs 200.00",
+          change: "+8 from yesterday",
+          colors: ['#FFF4DE', 'white'],
+          icon: <Cash />
+        },
+        {
+          title: "Refund Amount",
+          count: "Rs 2000.00",
+          change: "+8 from yesterday",
+          colors: ['#DCFCE7', 'white'],
+          icon: <Amount />
+        },
+        {
+          title: "Total Amount Of Balance",
+          count: "Rs 2000.00",
+          change: "+8 from yesterday",
+          colors: ['#F4E8FF', 'white'],
+          icon: <Balance />,
+          button:true
+        },
+      ];
   return (
     <View style={styles.container}>
   <View style={styles.headerRow}>
@@ -22,15 +59,15 @@ const Paymnets = () => {
            <View style={styles.wrapper}>
         <Text style={styles.header}>Payment Summary</Text>
   
-        
-      
+   <HomeCards cardsData={cardsData}/>
+    <PaymnetTable/>
       </View>
         </ScrollView>
     </View>
   )
 }
 
-export default Paymnets
+export default payments
 
 const styles = StyleSheet.create({
   container: {

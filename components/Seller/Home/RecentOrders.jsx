@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius:10
   },
   tableCell: {
-    width: 110,
+    width: 150,
     paddingHorizontal: 8,
     fontSize: 15,
     color: '#333',

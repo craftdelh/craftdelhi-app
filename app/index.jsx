@@ -19,7 +19,7 @@ export default function Index() {
           setUser(parsedUser);
           console.log(parsedUser)
           if (parsedUser?.isSeller) {
-  router.replace("/(sellerTab)/(sellerTabs)/Home");
+  router.replace("/(sellerTab)/payments");
 } else {
   router.replace("/(tabs)/Home");
 }
