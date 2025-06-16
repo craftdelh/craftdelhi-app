@@ -15,23 +15,45 @@ import {
 } from 'react-native';
 import Logo1 from '../../../assets/images/logo1.svg';
 import { useUser } from '../../../context/UserContext';
+import axios from 'axios';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const { setUser } = useUser();
+  const [loading, setLoading] = useState(false);
+  const isSeller = true;
+
+
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmailValid = emailRegex.test(email.trim());
 
   const handleSendOtp = async () => {
-    if (!isEmailValid) {
-      setError('Please enter a valid email address');
-      return;
-    }else{
-         router.push({ pathname: '/auth/Otp', params: { email } });
+  if (!isEmailValid) {
+    setError('Please enter a valid email address');
+    return;
+  }
+
+    setLoading(true);
+
+  try {
+    const response = await axios.post('https://backend.craftdelhi.com/backend/api/auth/send-otp', { email });
+
+    if (response.data.status) {
+      router.push({ pathname: '/auth/Otp', params: { email, isSeller } });
+    } else {
+      setError(response.data.message || 'Failed to send OTP');
     }
-  };
+  } catch (err) {
+    console.error('Send OTP error:', err);
+    setError('Something went wrong. Please try again.');
+  }
+  finally {
+    setLoading(false); 
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -82,13 +104,16 @@ const Signup = () => {
 
           {/* Send OTP Button */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, !isEmailValid && styles.disabledButton]}
-              disabled={!isEmailValid}
-              onPress={handleSendOtp}
-            >
-              <Text style={styles.buttonText}>Send OTP to your Email Address</Text>
-            </TouchableOpacity>
+           <TouchableOpacity
+            style={[styles.button, (!isEmailValid || loading) && styles.disabledButton]}
+            disabled={!isEmailValid || loading}
+            onPress={handleSendOtp}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Sending...' : 'Send OTP to your Email Address'}
+            </Text>
+          </TouchableOpacity>
+
           </View>
 
           {/* Footer */}

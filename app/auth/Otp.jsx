@@ -16,11 +16,15 @@ import OtpSentIcon from '../../assets/images/i1.svg';
 import { useLocalSearchParams } from 'expo-router';
 import Logo1 from '../../assets/images/logo1.svg';
 import Box from '../../assets/images/box.svg'
+import axios from 'axios';
+ 
+
 const Otp = () => {
   const [error, setError] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false); 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const { email } = useLocalSearchParams();
+  const { email, isSeller } = useLocalSearchParams();
+  const [loading, setLoading] = useState(false);
 
 
   const inputRefs = [
@@ -32,18 +36,44 @@ const Otp = () => {
     useRef(null),
   ];
 
-  const handleLogin = () => {
-    if (!isOtpSent) {
-      setIsOtpSent(true); 
+  const handleLogin = async () => {
+  if (!isOtpSent) {
+    setIsOtpSent(true); 
+    return;
+  }
+
+  const enteredOtp = otp.join('');
+
+  if (enteredOtp.length !== 6) {
+    setError('Please enter the complete OTP');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const response = await axios.post('https://backend.craftdelhi.com/backend/api/auth/verify-otp', {
+      email,
+      otp: enteredOtp,
+    });
+
+    if (response.data.status) {
+      router.replace({
+  pathname: '/auth/NewPassword',
+  params: { email, isSeller },
+});
+
     } else {
-      if (otp.join('') === '300820') {
-        setError(''); 
-      router.replace('/auth/NewPassword')
-      } else {
-        setError('Incorrect OTP'); 
-      }
+      setError(response.data.message || 'OTP verification failed');
     }
-  };
+  } catch (err) {
+    // console.error('OTP verification error:', err);
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const isOtpComplete = otp.every((digit) => digit !== '');
 
@@ -116,18 +146,18 @@ const Otp = () => {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
-  style={[
-    styles.button,
-    isOtpSent && !isOtpComplete && { backgroundColor: '#ccc' } 
-  ]}
-  onPress={handleLogin}
-  disabled={isOtpSent && !isOtpComplete} 
->
-  <Text style={styles.buttonText}>
-    {isOtpSent ? 'Verify OTP' : 'Continue'}
-  </Text>
-</TouchableOpacity>
+           <TouchableOpacity
+              style={[
+                styles.button,
+                (isOtpSent && (!isOtpComplete || loading)) && { backgroundColor: '#ccc' }
+              ]}
+              onPress={handleLogin}
+              disabled={isOtpSent && (!isOtpComplete || loading)}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Verifying...' : isOtpSent ? 'Verify OTP' : 'Continue'}
+              </Text>
+            </TouchableOpacity>
 
           </View>
         </ScrollView>

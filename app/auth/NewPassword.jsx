@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -21,6 +21,7 @@ const NewPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const { email, isSeller } = useLocalSearchParams();
 
   const isFormValid =
     newPassword.trim().length >= 6 && confirmPassword.trim().length >= 6;
@@ -42,7 +43,15 @@ const NewPassword = () => {
   }
 
   setError('');
+  if (isSeller === 'true' || isSeller === true) {
+  router.replace({
+    pathname: '/auth/SellerSignup',
+    params: { email,password: newPassword, },
+  });
+} else {
   router.replace('/auth/Final');
+}
+
 };
 
 

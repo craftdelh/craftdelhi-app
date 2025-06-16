@@ -5,10 +5,14 @@ import Login from '../components/Login'
 import { useUser } from "../context/UserContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export const baseurl='https://backend.craftdelhi.com/backend/api/'
+
 export default function Index() {
   const { user, setUser } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(true);  
+
+  
 
   useEffect(() => {
     const checkLogin = async () => {
