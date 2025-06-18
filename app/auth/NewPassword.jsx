@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Logo1 from '../../assets/images/logo1.svg';
+import axios from 'axios';
 
 const NewPassword = () => {
   const [newPassword, setNewPassword] = useState('');
@@ -21,12 +22,12 @@ const NewPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { email, isSeller } = useLocalSearchParams();
+  const { email, isSeller,otp } = useLocalSearchParams();
 
   const isFormValid =
     newPassword.trim().length >= 6 && confirmPassword.trim().length >= 6;
 
-  const handleContinue = () => {
+const handleContinue = async () => {
   if (newPassword.trim() === '' || confirmPassword.trim() === '') {
     setError('All fields are required');
     return;
@@ -43,15 +44,38 @@ const NewPassword = () => {
   }
 
   setError('');
-  if (isSeller === 'true' || isSeller === true) {
-  router.replace({
-    pathname: '/auth/SellerSignup',
-    params: { email,password: newPassword, },
-  });
-} else {
-  router.replace('/auth/Final');
-}
 
+  // ✅ If OTP is present, call reset-password API
+  if (otp) {
+    try {
+      const res = await axios.post('https://backend.craftdelhi.com/backend/api/auth/reset-password', {
+        email,
+        otp,
+        newPassword,
+      });
+
+      if (res.data.status) {
+        // Navigate to Final screen after successful reset
+        router.replace('/auth/Final');
+      } else {
+        setError(res.data.message || 'Reset failed');
+      }
+    } catch (err) {
+      console.error('Reset password error:', err);
+      setError('Something went wrong. Please try again later.');
+    }
+    return;
+  }
+
+  // 🚫 If no OTP, continue normal flow
+  if (isSeller === 'true' || isSeller === true) {
+    router.replace({
+      pathname: '/auth/SellerSignup',
+      params: { email, password: newPassword },
+    });
+  } else {
+    router.replace('/auth/Final');
+  }
 };
 
 

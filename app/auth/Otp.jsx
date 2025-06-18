@@ -23,7 +23,7 @@ const Otp = () => {
   const [error, setError] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false); 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const { email, isSeller } = useLocalSearchParams();
+  const { email, isSeller,purpose } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
 
 
@@ -38,7 +38,7 @@ const Otp = () => {
 
   const handleLogin = async () => {
   if (!isOtpSent) {
-    setIsOtpSent(true); 
+    setIsOtpSent(true);
     return;
   }
 
@@ -53,27 +53,49 @@ const Otp = () => {
   setError('');
 
   try {
-    const response = await axios.post('https://backend.craftdelhi.com/backend/api/auth/verify-otp', {
+    // Prepare payload
+    const payload = {
       email,
       otp: enteredOtp,
-    });
+    };
+
+    // Only include purpose if it exists
+    if (purpose) {
+      payload.purpose = purpose;
+    }
+
+    const response = await axios.post(
+      'https://backend.craftdelhi.com/backend/api/auth/verify-otp',
+      payload
+    );
 
     if (response.data.status) {
-      router.replace({
+     const params = { email, isSeller };
+
+if (purpose === 'reset') {
+  params.otp = enteredOtp;
+}
+
+router.replace({
   pathname: '/auth/NewPassword',
-  params: { email, isSeller },
+  params,
 });
 
     } else {
       setError(response.data.message || 'OTP verification failed');
     }
   } catch (err) {
-    // console.error('OTP verification error:', err);
-    setError('Something went wrong. Please try again.');
+    console.error('OTP verification error:', err);
+    if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else {
+      setError('Something went wrong. Please try again.');
+    }
   } finally {
     setLoading(false);
   }
 };
+
 
   const isOtpComplete = otp.every((digit) => digit !== '');
 

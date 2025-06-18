@@ -13,29 +13,51 @@ import {
   ScrollView,
 } from 'react-native';
 import Logo1 from '../../assets/images/logo1.svg';
+import axios from 'axios';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmailValid = emailRegex.test(email.trim());
   const isFormValid = isEmailValid;
 
-  const handleLogin = () => {
-    if (!emailRegex.test(email.trim())) {
-      setError('Please enter a valid email address');
-      return;
-    }
+  const handleLogin = async () => {
+  if (!emailRegex.test(email.trim())) {
+    setError('Please enter a valid email address');
+    return;
+  }
 
-    if (email !== 'buyer@gmail.com') {
-      setError('There is no registered user with this email!');
-      return;
-    }
+  setLoading(true); // Start loading
 
-    setError('');
-    router.push({ pathname: '/auth/Otp', params: { email } });
-  };
+  try {
+    const response = await axios.post('https://backend.craftdelhi.com/backend/api/auth/forgot-password', {
+      email: email.trim(),
+      purpose: 'reset',
+    });
+
+    const { status, message } = response.data;
+
+    if (status) {
+      setError('');
+     router.push({ pathname: '/auth/Otp', params: { email, purpose: 'reset' } });
+    } else {
+      setError(message || 'Something went wrong');
+    }
+  } catch (err) {
+    console.error('Forgot Password Error:', err);
+    if (err.response && err.response.data?.message) {
+      setError(err.response.data.message);
+    } else {
+      setError('Something went wrong. Please try again later.');
+    }
+  } finally {
+    setLoading(false); // Stop loading
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -84,13 +106,19 @@ const ForgetPassword = () => {
 
           {/* Button */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, !isFormValid && styles.disabledButton]}
-              disabled={!isFormValid}
-              onPress={handleLogin}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </TouchableOpacity>
+           <TouchableOpacity
+                style={[
+                  styles.button,
+                  (!isFormValid || loading) && styles.disabledButton,
+                ]}
+                disabled={!isFormValid || loading}
+                onPress={handleLogin}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? 'Please wait...' : 'Continue'}
+                </Text>
+              </TouchableOpacity>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
