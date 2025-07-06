@@ -38,7 +38,7 @@ const Signup = () => {
     setLoading(true);
 
   try {
-    const response = await axios.post('https://backend.craftdelhi.com/backend/api/auth/send-otp', { email });
+    const response = await axios.post(`${process.env.EXPO_PUBLIC_BASE_URL}auth/send-otp`, { email });
 
     if (response.data.status) {
       router.push({ pathname: '/auth/Otp', params: { email, isSeller } });

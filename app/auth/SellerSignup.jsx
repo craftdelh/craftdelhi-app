@@ -71,7 +71,7 @@ const handleSignup = async () => {
 
   try {
     const response = await axios.post(
-      'https://backend.craftdelhi.com/backend/api/auth/register-details',
+      `${process.env.EXPO_PUBLIC_BASE_URL}auth/register-details`,
       {
         email,
         first_name: firstName,

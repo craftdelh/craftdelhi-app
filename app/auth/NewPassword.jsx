@@ -48,11 +48,15 @@ const handleContinue = async () => {
   // ✅ If OTP is present, call reset-password API
   if (otp) {
     try {
-      const res = await axios.post('https://backend.craftdelhi.com/backend/api/auth/reset-password', {
-        email,
-        otp,
-        newPassword,
-      });
+      const res = await axios.post(
+  `${process.env.EXPO_PUBLIC_BASE_URL}/auth/reset-password`,
+  {
+    email,
+    otp,
+    newPassword,
+  }
+);
+
 
       if (res.data.status) {
         // Navigate to Final screen after successful reset

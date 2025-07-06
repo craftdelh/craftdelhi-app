@@ -33,10 +33,13 @@ const ForgetPassword = () => {
   setLoading(true); // Start loading
 
   try {
-    const response = await axios.post('https://backend.craftdelhi.com/backend/api/auth/forgot-password', {
-      email: email.trim(),
-      purpose: 'reset',
-    });
+    const response = await axios.post(
+  `${process.env.EXPO_PUBLIC_BASE_URL}/auth/forgot-password`,
+  {
+    email: email.trim(),
+    purpose: 'reset',
+  }
+);
 
     const { status, message } = response.data;
 

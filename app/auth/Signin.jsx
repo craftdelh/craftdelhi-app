@@ -16,6 +16,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Logo1 from '../../assets/images/logo1.svg';
 import { useUser } from '../../context/UserContext';
+import axios from 'axios';
 
 const Signin = () => {
   const [username, setUsername] = useState('');
@@ -26,52 +27,66 @@ const Signin = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmailValid = emailRegex.test(username.trim());
   const isFormValid = isEmailValid && password.trim() !== '';
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async() => {
-    if (!isEmailValid) {
-      setError('Please enter a valid email address');
+
+const handleLogin = async () => {
+  if (!validateForm()) return;
+
+  setLoading(true);
+  try {
+    const response = await axios.post(
+      `${process.env.EXPO_PUBLIC_BASE_URL}/auth/login`,
+      { email: username, password }
+    );
+
+    const { id, role, status, token, message } = response.data;
+
+    if (!status) {
+      setError(message || 'Invalid username or password');
       return;
     }
 
-    if (username.trim() === '' || password.trim() === '') {
-      setError('All fields are required');
-      return;
-    }
+    const userData = {
+      token,
+      role,
+      id,
+      isSeller: role === 2,
+    };
 
-    let userData = null;
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    setError('');
 
-     if (username === 'abhinav@gmail.com' && password === 'abhinav123') {
-      userData = {
-        name: 'Abhinav',
-        email: 'abhinav@gmail.com',
-        isSeller: false,
-      };
-    } else if (username === 'rajesh@gmail.com' && password === 'rajesh123') {
-      userData = {
-        name: 'Rajesh',
-        email: 'rajesh@gmail.com',
-        isSeller: true,
-      };
+    if (userData.isSeller) {
+      router.replace('/(sellerTab)/(sellerTabs)/Home');
     } else {
-      setError('There seems to be an issue with your username or password');
-      return;
+      router.replace('/(tabs)/Home');
     }
 
-     try {
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      setError('');
-     if (userData.isSeller) {
-  router.replace('/(sellerTab)/(sellerTabs)/Home');
-} else {
-  router.replace('/(tabs)/Home');
-}
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
-    } catch (err) {
-      console.error('Error storing user data:', err);
-    }
-   
-  };
+
+const validateForm = () => {
+  if (!isEmailValid) {
+    setError('Please enter a valid email address');
+    return false;
+  }
+
+  if (username.trim() === '' || password.trim() === '') {
+    setError('All fields are required');
+    return false;
+  }
+
+  return true;
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -150,13 +165,15 @@ const Signin = () => {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, !isFormValid && styles.disabledButton]}
-              disabled={!isFormValid}
-              onPress={handleLogin}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </TouchableOpacity>
+           <TouchableOpacity
+  style={[styles.button, (!isFormValid || loading) && styles.disabledButton]}
+  disabled={!isFormValid || loading}
+  onPress={handleLogin}
+>
+  <Text style={styles.buttonText}>
+    {loading ? 'Logging in...' : 'Continue'}
+  </Text>
+</TouchableOpacity>
           </View>
 
           {/* Footer */}

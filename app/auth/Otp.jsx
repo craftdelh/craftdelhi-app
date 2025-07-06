@@ -65,7 +65,7 @@ const Otp = () => {
     }
 
     const response = await axios.post(
-      'https://backend.craftdelhi.com/backend/api/auth/verify-otp',
+      `${process.env.EXPO_PUBLIC_BASE_URL}auth/verify-otp`,
       payload
     );
 
