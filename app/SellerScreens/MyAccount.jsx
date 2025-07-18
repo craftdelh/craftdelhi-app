@@ -11,20 +11,28 @@ import {
   Keyboard,
   Modal,
 } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { AntDesign } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import Toast from 'react-native-toast-message'
 import * as Haptics from 'expo-haptics'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
+
+
+const axiosInstance = axios.create({
+  baseURL: process.env.EXPO_PUBLIC_BASE_URL,
+});
 
 const MyAccount = () => {
   const [editMode, setEditMode] = useState(false)
 
-  const [bank, setBank] = useState('State Bank of India')
-  const [branch, setBranch] = useState('Connaught Place, New Delhi')
-  const [holder, setHolder] = useState('Rahul Sharma')
-  const [accountNumber, setAccountNumber] = useState('123456789012')
-  const [ifsc, setIfsc] = useState('SBIN0001234')
+  const [bank, setBank] = useState('')
+  const [branch, setBranch] = useState('')
+  const [holder, setHolder] = useState('')
+  const [accountNumber, setAccountNumber] = useState('')
+  const [ifsc, setIfsc] = useState('')
 
   const [bankModalVisible, setBankModalVisible] = useState(false)
   const [branchModalVisible, setBranchModalVisible] = useState(false)
@@ -32,15 +40,86 @@ const MyAccount = () => {
   const bankOptions = ['State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Punjab National Bank']
   const branchOptions = ['Connaught Place, New Delhi', 'Karol Bagh, New Delhi', 'Chandni Chowk, New Delhi']
 
-  const handleSave = () => {
-     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    setEditMode(false)
+  useEffect(() => {
+  const fetchDetails = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user')
+      const parsed = JSON.parse(userData)
+      const token = parsed?.token
+
+      const { data } = await axiosInstance.get('/profile/getbankdetails', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (data.status) {
+        const d = data.bankDetails
+        setBank(d.bank_name || '')
+        setBranch(d.branch_location || '')
+        setHolder(d.account_holder_name || '')
+        setAccountNumber(d.account_number || '')
+        setIfsc(d.ifsc_code || '')
+      } else {
+        Toast.show({ type: 'info', text1: data.message })
+      }
+    } catch (err) {
+      console.error(err)
+      Toast.show({ type: 'error', text1: 'Failed to load details' })
+    }
+  }
+
+  fetchDetails()
+}, [])
+
+
+
+ const handleSave = async () => {
+  try {
+    const userData = await AsyncStorage.getItem('user')
+    const parsed = JSON.parse(userData)
+    const token = parsed?.token
+
+    const payload = {
+      bank_name: bank,
+      branch_location: branch,
+      account_holder_name: holder,
+      account_number: accountNumber,
+      ifsc_code: ifsc,
+    }
+
+    const { data } = await axiosInstance.put('/profile/editbankdetails', payload, {
+      headers: {
+        Authorization: `${token}`,
+      },
+    })
+
+    if (data.status) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+      setEditMode(false)
+      Toast.show({
+        type: 'success',
+        text1: 'Bank details updated successfully',
+        position: 'bottom',
+      })
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: data.message || 'Update failed',
+        position: 'bottom',
+      })
+    }
+  } catch (err) {
+    console.error(err)
     Toast.show({
-      type: 'success',
-      text1: 'Saved Successfully',
+      type: 'error',
+      text1: 'Internal server error',
       position: 'bottom',
     })
   }
+}
+
+
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -66,7 +145,6 @@ const MyAccount = () => {
             <Text style={styles.sectionTitle}>Account Information</Text>
             <View style={styles.divider} />
 
-            {/* Bank Dropdown */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Select Bank</Text>
               <TouchableOpacity
@@ -79,7 +157,6 @@ const MyAccount = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Branch Dropdown */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Branch Location</Text>
               <TouchableOpacity
@@ -92,7 +169,6 @@ const MyAccount = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Other Inputs */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Account Holder Name</Text>
               <View style={styles.inputBox}>
@@ -141,10 +217,10 @@ const MyAccount = () => {
 
             <TouchableOpacity
               style={[styles.button, { backgroundColor: '#024A63' }]}
-             onPress={() => {
+              onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
                 editMode ? handleSave() : setEditMode(true)
-            }}
+              }}
             >
               <Text style={styles.buttonText}>{editMode ? 'Save' : 'Edit'}</Text>
             </TouchableOpacity>
@@ -198,6 +274,7 @@ const MyAccount = () => {
 }
 
 export default MyAccount
+
 
 const styles = StyleSheet.create({
   headerRow: {

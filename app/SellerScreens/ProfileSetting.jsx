@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics'
 import Toast from 'react-native-toast-message';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 export default function ProfileScreen() {
   const user = useUser();
@@ -29,11 +32,14 @@ export default function ProfileScreen() {
     'https://media.istockphoto.com/id/1289220545/photo/beautiful-woman-smiling-with-crossed-arms.jpg?s=612x612&w=0&k=20&c=qmOTkGstKj1qN0zPVWj-n28oRA6_BHQN8uVLIXg0TF8='
   );
 
-  const [phone, setPhone] = useState('');
-  const [city, setCity] = useState('');
-  const [dob, setDob] = useState(new Date(1998, 0, 1));
-  const [officeAddress, setOfficeAddress] = useState('');
-  const [homeAddress, setHomeAddress] = useState('');
+  const [firstName, setFirstName] = useState('');
+const [lastName, setLastName] = useState('');
+const [email, setEmail] = useState('');
+const [phone, setPhone] = useState('');
+const [city, setCity] = useState('');
+const [dob, setDob] = useState(new Date(1998, 0, 1));
+const [homeAddress, setHomeAddress] = useState('');
+const [officeAddress, setOfficeAddress] = useState('');
 
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -64,20 +70,63 @@ export default function ProfileScreen() {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    setPhone(tempPhone);
-    setCity(tempCity);
-    setDob(tempDob);
-    setOfficeAddress(tempOfficeAddress);
-    setHomeAddress(tempHomeAddress);
-    setIsEditing(false);
-     Toast.show({
-              type: 'success',
-              text1: 'Information Saved Successfully',
-              position: 'bottom',
-            })
-  };
+  const handleSave = async () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+  try {
+    const userData = await AsyncStorage.getItem('user');
+    const parsed = JSON.parse(userData);
+    const token = parsed?.token;
+
+    const formData = new FormData();
+    formData.append('phone_number', tempPhone);
+    formData.append('date_of_birth', tempDob.toISOString().split('T')[0]); // 'YYYY-MM-DD'
+    formData.append('city', tempCity);
+    formData.append('home_address', tempHomeAddress);
+    formData.append('office_address', tempOfficeAddress);
+
+    if (profileImage && profileImage.startsWith('file://')) {
+      formData.append('profile_image', {
+        uri: profileImage,
+        name: 'profile.jpg',
+        type: 'image/jpeg',
+      });
+    }
+
+    const response = await axios.put(
+      'https://backend.craftdelhi.com/backend/api/profile/edit',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `${token}`,
+        },
+      }
+    );
+
+    if (response.data.status) {
+      const updated = response.data.updatedProfile;
+      setPhone(updated.phone_number);
+      setCity(updated.city);
+      setDob(new Date(updated.date_of_birth));
+      setHomeAddress(updated.home_address);
+      setOfficeAddress(updated.office_address);
+      if (updated.profile_image) setProfileImage(updated.profile_image);
+      setIsEditing(false);
+      Toast.show({
+        type: 'success',
+        text1: 'Profile updated successfully',
+        position: 'bottom',
+      });
+    } else {
+      Toast.show({ type: 'error', text1: response.data.message });
+    }
+  } catch (error) {
+    console.log('Profile update error:', error);
+    Toast.show({ type: 'error', text1: 'Failed to update profile' });
+  }
+};
+
 
   // Pick image from gallery and update state
   const pickImage = async () => {
@@ -99,6 +148,46 @@ export default function ProfileScreen() {
     }
   };
 
+  useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+     const userData = await AsyncStorage.getItem('user');
+      const parsed = JSON.parse(userData);
+      const token = parsed?.token;
+      const res = await axios.get(
+        'https://backend.craftdelhi.com/backend/api/profile/getdetails',
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+
+     if (res.data.status) {
+  const p = res.data.profile;
+
+  setFirstName(p.first_name || '');
+  setLastName(p.last_name || '');
+  setEmail(p.email || '');
+  setPhone(p.phone_number || '');
+  setCity(p.city || '');
+  setDob(new Date(p.date_of_birth));
+  setHomeAddress(p.home_address || '');
+  setOfficeAddress(p.office_address || '');
+  setProfileImage(p.profile_image || '');
+}
+ else {
+        Toast.show({ type: 'error', text1: res.data.message });
+      }
+    } catch (err) {
+      console.log('Profile fetch error:', err);
+      Toast.show({ type: 'error', text1: 'Failed to load profile' });
+    }
+  };
+
+  fetchProfile();
+}, []);
+
   return (
     <KeyboardAvoidingView
       style={styles.wrapper}
@@ -119,9 +208,9 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.rowBetween}>
             <Text style={styles.headerText}>Basic Information :</Text>
-            <TouchableOpacity onPress={()=>router.push('/SellerScreens/ChangePassword')}>
+            {/* <TouchableOpacity onPress={()=>router.push('/SellerScreens/ChangePassword')}>
               <Text style={styles.changePassword}>Change Password</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
           <View style={styles.divider} />
         </View>
@@ -139,21 +228,21 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.userDetails}>
-            <Text style={styles.name}>{user?.user?.name || 'Your Name'}</Text>
-            <Text style={styles.name}>aa***************</Text>
-            <Text style={styles.email}>{user?.user?.email || 'your.email@example.com'}</Text>
+           <Text style={styles.name}>{firstName + ' ' + lastName || "NO Name"}</Text>
+          
+            <Text style={styles.email}>{email || 'your.email@example.com'}</Text>
           </View>
         </View>
 
         {/* Input Fields */}
-        <InputField label="Phone Number" value={tempPhone} onChangeText={setTempPhone} editable={isEditing} />
-        <InputField label="City" value={tempCity} onChangeText={setTempCity} editable={isEditing} />
+        <InputField label="Phone Number" value={isEditing ? tempPhone : phone} onChangeText={setTempPhone} editable={isEditing} />
+        <InputField label="City"  value={isEditing?tempCity:city} onChangeText={setTempCity} editable={isEditing} />
 
         {/* DOB */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Date of Birth</Text>
           <TouchableOpacity onPress={() => isEditing && setShowDatePicker(true)} style={styles.inputContainer}>
-            <Text style={styles.placeholder}>{tempDob.toDateString()}</Text>
+            <Text style={styles.placeholder}>  {(isEditing ? tempDob : dob).toDateString()}</Text>
           </TouchableOpacity>
           {showDatePicker && (
             <DateTimePicker
@@ -174,13 +263,13 @@ export default function ProfileScreen() {
 
         <TextAreaField
           label="Office Address"
-          value={tempOfficeAddress}
+          value={isEditing ? tempOfficeAddress : officeAddress}
           onChangeText={setTempOfficeAddress}
           editable={isEditing}
         />
         <TextAreaField
           label="Home Address"
-          value={tempHomeAddress}
+         value={isEditing ? tempHomeAddress : homeAddress}
           onChangeText={setTempHomeAddress}
           editable={isEditing}
         />

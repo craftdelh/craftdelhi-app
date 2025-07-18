@@ -6,6 +6,9 @@ import sample from '../assets/images/sample.png';
 import { Picker } from '@react-native-picker/picker'; 
 import { AntDesign, Entypo } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import * as mime from 'mime';
 
 export default function EditProduct({}) {
   
@@ -13,10 +16,10 @@ export default function EditProduct({}) {
 const item = JSON.parse(itemParam || '{}');
 console.log('Parsed item:', item);
 
-
   const [description, setDescription] = useState('');
  const [productName, setProductName] = useState('');
 const [price, setPrice] = useState('');
+const [quantity, setQuantity] = useState('');
 const [category, setCategory] = useState('');
 const [dimensions, setDimensions] = useState('');
 const [reelName, setReelName] = useState('');
@@ -25,33 +28,41 @@ const [packageWeight, setPackageWeight] = useState('');
   const [warrantyType, setWarrantyType] = useState('No Warranty')
   const [mainMedia, setMainMedia] = useState(null);
   const [videoUri, setVideoUri] = useState(null);
-  const [additionalImages, setAdditionalImages] = useState([null, null, null, null]);
+const [reelUri, setReelUri] = useState(null);
+  const [videoName, setVideoName] = useState('');
+  const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+    const [additionalImages, setAdditionalImages] = useState([null, null, null, null]);
 
-  useEffect(() => {
-    if (item && !initialized) {
-      setDescription(item.description || '');
-      setProductName(item.name || '');
-      setPrice(item.price?.toString() || '');
-      setCategory(item.category || '');
-      setDimensions(item.dimensions || '');
-      setReelName(item.reelName || '');
-      setPackageWeight(item.packageWeight?.toString() || '');
-      setWeightUnit(item.weightUnit || 'kg');
-      setWarrantyType(item.warrantyType || 'No Warranty');
-      setMainMedia(item.image || null);
-      setVideoUri(item.videoUri || null);
 
-      // Ensure additionalImages is array of length 4
-      if (Array.isArray(item.additionalImages)) {
-        const imgs = [...item.additionalImages];
-        while (imgs.length < 4) imgs.push(null);
-        setAdditionalImages(imgs.slice(0, 4));
-      } else {
-        setAdditionalImages([null, null, null, null]);
-      }
+ useEffect(() => {
+  if (item && !initialized) {
+    setDescription(item.description || '');
+    setProductName(item.name || '');
+    setPrice(item.price?.toString() || '');
+    setCategory(item.category_id?.toString() || '');
+    setDimensions(item.dimension || '');
+    setReelName(''); // no reel_name in response
+    setPackageWeight(item.package_weight?.toString() || '');
+    setWeightUnit(item.weight_type || 'kg');
+    setWarrantyType(item.warranty_type || 'No Warranty');
+    setMainMedia(item.main_image_url || null);
+    setVideoUri(item.video_url || null);
+    setReelUri(item.reel_url || null)
+
+    // Additional images might not be coming, fallback to empty
+    if (Array.isArray(item.gallery_images)) {
+      const imgs = [...item.gallery_images];
+      while (imgs.length < 4) imgs.push(null);
+      setAdditionalImages(imgs.slice(0, 4));
+    } else {
+      setAdditionalImages([null, null, null, null]);
     }
-  }, []);
+
+    setInitialized(true);
+  }
+}, [item, initialized]);
+
 
   const pickImage = async (index = null) => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -71,16 +82,25 @@ const [packageWeight, setPackageWeight] = useState('');
     }
   };
 
- const pickVideo = async () => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-    quality: 1,
-  });
-
-  if (!result.canceled && result.assets?.[0]?.uri) {
-    setVideoUri(result.assets[0].uri);
-  }
-};
+  const pickVideo = async () => {
+   const result = await ImagePicker.launchImageLibraryAsync({
+     mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+     quality: 1,
+   });
+   if (!result.canceled && result.assets?.[0]?.uri) {
+     setVideoUri(result.assets[0].uri);
+   }
+ };
+ 
+ const pickReel = async () => {
+   const result = await ImagePicker.launchImageLibraryAsync({
+     mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+     quality: 1,
+   });
+   if (!result.canceled && result.assets?.[0]?.uri) {
+     setReelUri(result.assets[0].uri);
+   }
+ };
 useEffect(() => {
   (async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -89,6 +109,104 @@ useEffect(() => {
     }
   })();
 }, []);
+
+const handleSave = async () => {
+  try {
+    setLoading(true);
+    const userString = await AsyncStorage.getItem('user');
+const userData = JSON.parse(userString);
+const sellerId = userData.id;
+const token = userData.token;
+    const formData = new FormData();
+
+    formData.append('name', productName);
+    formData.append('description', description);
+    formData.append('price', price);
+    formData.append('category_id', category);
+    formData.append('quantity', quantity || '1'); // default fallback
+    formData.append('dimension', dimensions);
+    formData.append('package_weight', packageWeight);
+    formData.append('weight_type', weightUnit);
+    formData.append('warranty_type', warrantyType);
+
+    // media handling
+    if (mainMedia && !mainMedia.startsWith('http')) {
+      formData.append('main_image', {
+        uri: mainMedia,
+        type: 'image/jpeg',
+        name: 'main.jpg',
+      });
+    } else {
+      formData.append('main_image_url', mainMedia);
+    }
+
+    // Gallery images
+    const galleryUrls = [];
+    for (let img of additionalImages) {
+      if (img && !img.startsWith('http')) {
+        formData.append('gallery_images', {
+          uri: img,
+          type: 'image/jpeg',
+          name: `gallery_${Math.random()}.jpg`,
+        });
+      } else if (img) {
+        galleryUrls.push(img);
+      }
+    }
+    if (galleryUrls.length) {
+      formData.append('gallery_images', JSON.stringify(galleryUrls));
+    }
+
+    if (videoUri && !videoUri.startsWith('http')) {
+      formData.append('product_video', {
+        uri: videoUri,
+        type: 'video/mp4',
+        name: 'video.mp4',
+      });
+    } else if (videoUri) {
+      formData.append('video_url', videoUri);
+    }
+
+    if (reelUri && !reelUri.startsWith('http')) {
+      formData.append('product_reel', {
+        uri: reelUri,
+        type: 'video/mp4',
+        name: 'reel.mp4',
+      });
+    } else if (reelUri) {
+      formData.append('reel_url', reelUri);
+console.log("item.id",item.id)
+    }
+
+ const response = await axios.put(
+      `https://backend.craftdelhi.com/backend/api/products/update/${item.id}`,
+      formData,
+      {
+        headers: {
+          'Authorization': `${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+   const result = response.data;
+
+    if (result.status) {
+      alert('Product updated successfully');
+      router.back();
+    } else {
+      console.log('Update failed:', result);
+      alert('Failed to update product: ' + result.message);
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('An unexpected error occurred');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   const renderInputBlock = (label, value, setValue, keyboardType = 'default', multiline = false, placeholder = '') => (
@@ -164,31 +282,44 @@ useEffect(() => {
       {renderInputBlock('CATEGORIES (for Filtering)', category, setCategory, 'default', false, 'Hand Made Craft')}
       {renderInputBlock('PRODUCT DIMENSION (Length, Width, Height) Optional', dimensions, setDimensions, 'default', false, '20 x 15 x 10 cm')}
 
-      <Text style={styles.sectionTitle}>Video Upload :</Text>
-      {renderInputBlock('REEL NAME', reelName, setReelName, 'default', false, 'The Ultimate Celebration Box')}
+     <Text style={styles.sectionTitle}>Video Upload :</Text>
+     {renderInputBlock('VIDEO NAME', videoName, setVideoName, 'default', false, 'Enter video name...')}
+     
+     <View style={styles.uploadRow}>
+       {videoUri ? (
+         <Video source={{ uri: videoUri }} style={styles.thumbnailTall} useNativeControls resizeMode="cover" isLooping />
+       ) : (
+         <Image source={{ uri: 'https://placehold.co/100x158' }} style={styles.thumbnailTall} />
+       )}
+       <View style={styles.uploadDetails}>
+         <Text style={styles.uploadText}>Video upload info text here</Text>
+         <View style={styles.chooseFileBox}>
+           <TouchableOpacity style={styles.chooseFileButton} onPress={pickVideo}>
+             <Text style={styles.chooseFileText}>Choose File</Text>
+           </TouchableOpacity>
+         </View>
+       </View>
+     </View>
 
-      <View style={styles.uploadRow}>
-        {videoUri ? (
-  <Video
-    source={{ uri: videoUri }}
-    style={styles.thumbnailTall}
-    useNativeControls
-    resizeMode="cover"
-    isLooping
-  />
-) : (
-  <Image source={{ uri: 'https://placehold.co/100x158' }} style={styles.thumbnailTall} />
-)}
 
-        <View style={styles.uploadDetails}>
-          <Text style={styles.uploadText}>Min size: 480x480 px. Max video length: 60 seconds. Max file size: 100MB. Supported Format: mp4</Text>
-          <View style={styles.chooseFileBox}>
-            <TouchableOpacity style={styles.chooseFileButton} onPress={pickVideo}>
-              <Text style={styles.chooseFileText}>Choose File</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+     <Text style={styles.sectionTitle}>Reels Upload :</Text>
+     {renderInputBlock('REEL NAME', reelName, setReelName, 'default', false, 'Enter reel name...')}
+     
+     <View style={styles.uploadRow}>
+       {reelUri ? (
+         <Video source={{ uri: reelUri }} style={styles.thumbnailTall} useNativeControls resizeMode="cover" isLooping />
+       ) : (
+         <Image source={{ uri: 'https://placehold.co/100x158' }} style={styles.thumbnailTall} />
+       )}
+       <View style={styles.uploadDetails}>
+         <Text style={styles.uploadText}>Reel upload info text here</Text>
+         <View style={styles.chooseFileBox}>
+           <TouchableOpacity style={styles.chooseFileButton} onPress={pickReel}>
+             <Text style={styles.chooseFileText}>Choose File</Text>
+           </TouchableOpacity>
+         </View>
+       </View>
+     </View>
 
       <View style={{ marginTop: 10 }}>
       <Text style={{ fontFamily: 'mbold', fontSize: 17 }}>Shipping & Warranty :</Text>
@@ -248,9 +379,12 @@ useEffect(() => {
         <TouchableOpacity onPress={()=>router.back()} style={styles.cancelButton}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addText}>Save</Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={styles.addButton} onPress={handleSave} disabled={loading}>
+ {loading ? (
+ <Text style={styles.addText}>Saving...</Text>
+ ) : ( <Text style={styles.addText}>Save</Text>
+ )}
+</TouchableOpacity>
       </View>
     </ScrollView>
  </View>
