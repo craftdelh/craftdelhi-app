@@ -14,6 +14,12 @@ export const UserProvider = ({ children }) => {
   const [rooms, setRooms] = useState([]);
   const socketRef = useRef(null);
   const roomsRef = useRef([]);
+  const [activeRoomId, setActiveRoomId] = useState(null);
+  const activeRoomIdRef = useRef(null);
+
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
 
   useEffect(() => {
     roomsRef.current = rooms;
@@ -40,8 +46,11 @@ export const UserProvider = ({ children }) => {
       });
 
       socketRef.current.on("message_received", (msg) => {
-        // Show Toast if sender is not me
-        if (String(msg.senderId) !== String(finalSellerId)) {
+        // Check if this room is currently active in the chat screen
+        const isCurrentRoom = String(activeRoomIdRef.current) === String(msg.roomId);
+
+        // Show Toast if sender is not me and we are NOT looking at this room
+        if (!isCurrentRoom && String(msg.senderId) !== String(finalSellerId)) {
           const room = roomsRef.current.find(r => String(r.roomId || r._id || r.id) === String(msg.roomId));
           let senderName = "Admin/Customer";
           if (room) {
@@ -61,7 +70,7 @@ export const UserProvider = ({ children }) => {
                 ...r, 
                 lastMessage: msg.message, 
                 lastMessageAt: msg.createdAt,
-                unreadCount: (r.unreadCount || 0) + 1
+                unreadCount: isCurrentRoom ? 0 : (r.unreadCount || 0) + 1
               };
             }
             return r;
@@ -87,7 +96,7 @@ export const UserProvider = ({ children }) => {
   const totalUnread = rooms.reduce((acc, r) => acc + (r.unreadCount || 0), 0);
 
   return (
-    <UserContext.Provider value={{ user, setUser, socket: socketRef.current, rooms, setRooms, totalUnread }}>
+    <UserContext.Provider value={{ user, setUser, socket: socketRef.current, rooms, setRooms, totalUnread, activeRoomId, setActiveRoomId }}>
       {children}
     </UserContext.Provider>
   );

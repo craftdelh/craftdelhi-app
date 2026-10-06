@@ -5,21 +5,23 @@ import { io } from 'socket.io-client';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import ImageViewing from "react-native-image-viewing";
 import { getImageUrl } from '../../../utils/imageUrl';
 
 import { useUser } from '../../../../context/UserContext';
-
+import * as ImagePicker from 'expo-image-picker';
 const API_BASE = process.env.EXPO_PUBLIC_CHAT_API_BASE || "https://backend.craftdelhi.com/chat";
 const APP_BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "https://backend.craftdelhi.com";
 const SOCKET_PATH = process.env.EXPO_PUBLIC_SOCKET_PATH || "/chat/socket.io";
 
 export default function MessagesScreen() {
-  const { user, socket, rooms, setRooms } = useUser();
+  const { user, socket, rooms, setRooms, setActiveRoomId } = useUser();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [sellerId, setSellerId] = useState(null);
   const [typingRooms, setTypingRooms] = useState({});
+  const [viewingImage, setViewingImage] = useState(null);
   const activeRoomRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   
@@ -50,7 +52,12 @@ export default function MessagesScreen() {
     const handleMsg = (msg) => {
       if (String(activeRoomRef.current) === String(msg.roomId)) {
         setMessages(prev => {
-          if (prev.some(m => (m._id && m._id === msg._id) || (m.tempId && m.tempId === msg.tempId))) return prev;
+          const index = prev.findIndex(m => (m._id && m._id === msg._id) || (m.tempId && m.tempId === msg.tempId));
+          if (index !== -1) {
+            const newMsgs = [...prev];
+            newMsgs[index] = { ...newMsgs[index], ...msg, status: "sent" };
+            return newMsgs;
+          }
           return [...prev, msg];
         });
         socket.emit("mark_room_read", { roomId: msg.roomId });
@@ -124,6 +131,7 @@ export default function MessagesScreen() {
     console.log("Selecting room ID:", id);
     setSelectedRoom(room);
     activeRoomRef.current = id;
+    setActiveRoomId(id);
     
     // clear badge locally
     setRooms(prevRooms => prevRooms.map(r => {
@@ -182,6 +190,76 @@ export default function MessagesScreen() {
     });
 
     setInputText("");
+  };
+
+  const pickImageAndSend = async () => {
+    if (!selectedRoomId) return;
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const tempId = "file-" + Date.now() + Math.random().toString(36).substring(7);
+      const now = new Date().toISOString();
+      
+      const fileToUpload = {
+        uri: asset.uri,
+        name: asset.fileName || `chat_media_${Date.now()}.jpg`,
+        type: asset.mimeType || 'image/jpeg',
+      };
+
+      // Optimistic UI Update
+      setMessages(prev => [...prev, {
+        roomId: selectedRoomId,
+        senderId: sellerId,
+        message: "",
+        filePreview: asset.uri,
+        createdAt: now,
+        tempId: tempId,
+        status: "sending"
+      }]);
+
+      try {
+        const formData = new FormData();
+        formData.append("roomId", selectedRoomId);
+        formData.append("tempId", tempId);
+        formData.append("file", fileToUpload);
+
+        const res = await axios.post(`${API_BASE}/message`, formData, {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        
+        const serverMsg = res.data?.data || res.data || {};
+        const persistentUrl = serverMsg.message || serverMsg.fileUrl || serverMsg.filePath || asset.uri;
+
+        if (socket) {
+          socket.emit("send_message", {
+            roomId: selectedRoomId,
+            senderId: sellerId,
+            message: persistentUrl,
+            fileUrl: persistentUrl,
+            tempId: tempId,
+          });
+        }
+
+        setMessages(prev => prev.map(m => 
+          m.tempId === tempId ? { ...m, ...serverMsg, filePreview: persistentUrl, status: "sent" } : m
+        ));
+      } catch (err) {
+        console.error("Upload error:", err);
+        Toast.show({ type: 'error', text1: 'Upload failed', text2: 'Could not send attachment.' });
+        setMessages(prev => prev.map(m => 
+          m.tempId === tempId ? { ...m, status: "failed" } : m
+        ));
+      }
+    }
   };
 
   const createRoom = async () => {
@@ -248,13 +326,19 @@ export default function MessagesScreen() {
   if (selectedRoomId) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <ImageViewing
+          images={viewingImage ? [{ uri: viewingImage.startsWith('http') ? viewingImage : getImageUrl(viewingImage) }] : []}
+          imageIndex={0}
+          visible={!!viewingImage}
+          onRequestClose={() => setViewingImage(null)}
+        />
         <KeyboardAvoidingView 
           style={{ flex: 1 }} 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => { setSelectedRoom(null); activeRoomRef.current = null; }} style={{ padding: 10 }}>
+          <TouchableOpacity onPress={() => { setSelectedRoom(null); activeRoomRef.current = null; setActiveRoomId(null); }} style={{ padding: 10 }}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{getRoomName(selectedRoom)}</Text>
@@ -283,8 +367,28 @@ export default function MessagesScreen() {
                   </View>
                 )}
                 <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.otherMessage, {marginBottom: 0}]}>
-                  <Text style={[styles.messageText, isMe && { color: '#fff' }]}>{item.message}</Text>
+                  {(item.filePreview || item.fileUrl || item.filePath) && (
+                    <TouchableOpacity onPress={() => setViewingImage(item.filePreview || item.fileUrl || item.filePath)}>
+                      <Image 
+                        source={{ uri: item.filePreview || item.fileUrl || item.filePath }} 
+                        style={{ width: 200, height: 200, borderRadius: 8, marginBottom: item.message ? 8 : 0 }} 
+                        resizeMode="cover" 
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {!!item.message && !item.message.startsWith('http') && <Text style={[styles.messageText, isMe && { color: '#fff' }]}>{item.message}</Text>}
+                  {!!item.message && item.message.startsWith('http') && !item.filePreview && !item.fileUrl && !item.filePath && (
+                    <TouchableOpacity onPress={() => setViewingImage(item.message)}>
+                      <Image 
+                        source={{ uri: item.message }} 
+                        style={{ width: 200, height: 200, borderRadius: 8, marginBottom: 0 }} 
+                        resizeMode="cover" 
+                      />
+                    </TouchableOpacity>
+                  )}
                   <Text style={{fontSize: 10, color: isMe ? '#e0e0e0' : '#888', alignSelf: 'flex-end', marginTop: 4}}>{time}</Text>
+                  {item.status === 'sending' && <Text style={{fontSize: 10, color: isMe ? '#e0e0e0' : '#888', alignSelf: 'flex-end'}}>Sending...</Text>}
+                  {item.status === 'failed' && <Text style={{fontSize: 10, color: 'red', alignSelf: 'flex-end'}}>Failed</Text>}
                 </View>
                 {isMe && (
                   <View style={{width: 32, height: 32, borderRadius: 16, backgroundColor: '#024A63', justifyContent: 'center', alignItems: 'center', marginLeft: 8}}>
@@ -307,6 +411,9 @@ export default function MessagesScreen() {
         )}
 
         <View style={styles.inputContainer}>
+          <TouchableOpacity style={styles.attachBtn} onPress={pickImageAndSend}>
+            <Ionicons name="add-circle-outline" size={28} color="#024A63" />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -314,7 +421,7 @@ export default function MessagesScreen() {
             onChangeText={handleTextChange}
           />
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-            <Ionicons name="send" size={20} color="#fff" />
+            <Ionicons name="send" size={20} color="#ffffffff" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -532,6 +639,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginRight: 10
+  },
+  attachBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 5
   },
   sendBtn: {
     backgroundColor: '#024A63',

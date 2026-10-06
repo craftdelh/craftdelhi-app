@@ -16,7 +16,7 @@ const HomeCards = ({ cardsData }) => {
       })
     );
     Animated.stagger(100, animationsSequence).start();
-  }, [cardsData]); 
+  }, []); // Run only on mount
 
   return (
     <View>
