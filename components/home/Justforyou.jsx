@@ -5,12 +5,67 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator
 } from 'react-native';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import * as Animatable from 'react-native-animatable';
 import { router } from 'expo-router';
+import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
+import Skeleton from '../Skeleton';
+
+const brandedPlaceholder = "https://craftdelhi.com/craftdelhi-placeholder.svg";
+
+const SIZE_ORDER = {
+  icon: ["icon", "thumbnail", "full"],
+  thumbnail: ["thumbnail", "full", "icon"],
+  full: ["full", "thumbnail", "icon"],
+};
+
+const parseImage = (image) => {
+  if (typeof image !== "string") return image;
+  const value = image.trim();
+  if (!value || value === "[object Object]") return null;
+  if ((value.startsWith("{") && value.endsWith("}")) ||
+      (value.startsWith("[") && value.endsWith("]"))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
+const getImageUrl = (image, preferredSize = "thumbnail", fallback = "") => {
+  const parsed = parseImage(image);
+  if (typeof parsed === "string") return parsed;
+  if (Array.isArray(parsed)) {
+    return getImageUrl(parsed[0], preferredSize, fallback);
+  }
+  if (!parsed || typeof parsed !== "object") return fallback;
+
+  const keys = [
+    ...(SIZE_ORDER[preferredSize] || SIZE_ORDER.thumbnail),
+    "original",
+    "original_url",
+    "image_url",
+    "url",
+    "src",
+    "path",
+  ];
+  for (const key of keys) {
+    if (parsed[key]) {
+      const resolved = getImageUrl(parsed[key], preferredSize);
+      if (resolved) return resolved;
+    }
+  }
+  return fallback;
+};
 
 const Justforyou = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [visibleItems, setVisibleItems] = useState([]);
   const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
 
@@ -18,87 +73,75 @@ const Justforyou = () => {
     setVisibleItems(viewableItems.map((vi) => vi.item.id));
   });
 
-  const products = [
-  {
-    id: '1',
-    title: 'Handmade Paper Gift',
-    price: '₹ 1,000.00',
-    oldPrice: '₹ 1,200.00',
-    image: 'https://www.papertree.co.uk/wp-content/uploads/2022/03/luxury-mothers-day-card-1100x1100.jpg',
-    orders: 1059,
-    rating: 4.9,
-    description: 'A luxurious handmade paper greeting card perfect for special occasions like Mother’s Day or birthdays.'
-  },
-  {
-    id: '2',
-    title: 'Printed Journal Set',
-    price: '₹ 850.00',
-    oldPrice: '₹ 999.00',
-    image: 'https://okhai.org/cdn/shop/files/EKA6-ELEPHANTMOTIF_1.png?v=1727331507',
-    orders: 720,
-    rating: 4.7,
-    description: 'Beautifully printed journal set with traditional motifs—ideal for daily journaling, gifting, or personal use.'
-  },
-  {
-    id: '3',
-    title: 'DIY Craft Kit',
-    price: '₹ 599.00',
-    oldPrice: '₹ 749.00',
-    image: 'https://d35l77wxi0xou3.cloudfront.net/opencart/image/productFromFeb2020/POTLI%20DIY%20Craft%20Kit%20(%204%20Year%20-%2012%20Year)%20Block%20Print%20Your%20T-Shirt%20(Elephant)1599206113-600x600.jpg',
-    orders: 430,
-    rating: 4.5,
-    description: 'Fun and creative DIY kit for kids to block print their own T-shirt. Encourages creativity and hands-on learning.'
-  },
-  {
-    id: '4',
-    title: 'Decor Wall Frame',
-    price: '₹ 1,299.00',
-    oldPrice: '₹ 1,499.00',
-    image: 'https://tangyoak.com/cdn/shop/products/4a_3d4aeecf-6ca2-4054-936d-5e2eb35ca7eb.jpg?v=1656494136',
-    orders: 1340,
-    rating: 4.8,
-    description: 'Elegant and modern wall frame to enhance your room decor. Great for living rooms, offices, and galleries.'
-  },
-  {
-    id: '5',
-    title: 'Cute Stationery Pack',
-    price: '₹ 450.00',
-    oldPrice: '₹ 600.00',
-    image: 'https://m.media-amazon.com/images/I/61DmMdPe-VL._AC_UF1000,1000_QL80_.jpg',
-    orders: 890,
-    rating: 4.6,
-    description: 'Adorable stationery set with pens, sticky notes, and more—perfect for students, office workers, or gift lovers.'
-  },
-  {
-    id: '6',
-    title: 'Personalized Gift Set',
-    price: '₹ 1,100.00',
-    oldPrice: '₹ 1,299.00',
-    image: 'https://shoppingsmart.in/cdn/shop/files/PersonalizedGiftSetHamperforWomen_3c11bc31-ac11-4ef9-a3ee-16963df166d6.jpg?v=1708356449&width=1946',
-    orders: 1500,
-    rating: 5.0,
-    description: 'Stylish personalized gift hamper featuring curated items—ideal for birthdays, anniversaries, or festive gifting.'
-  },
-];
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(`${process.env.EXPO_PUBLIC_BASE_URL}products/get`);
+      let productsData = response.data.data || [];
+      // Sort by created_at descending (newest first)
+      productsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      // Take first 8
+      productsData = productsData.slice(0, 8);
+      
+      setProducts(productsData);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const formatPrice = (price) => {
+    if (!price) return "0.00";
+    return parseFloat(price).toFixed(2);
+  };
+
+  const StarRating = ({ rating }) => {
+    const value = Number(rating || 0);
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {[1, 2, 3, 4, 5].map((star) => {
+          if (value >= star) {
+            return <Ionicons key={star} name="star" size={10} color="#69D297" />;
+          } else if (value >= star - 0.5) {
+            return <Ionicons key={star} name="star-half" size={10} color="#69D297" />;
+          } else {
+            return <Ionicons key={star} name="star-outline" size={10} color="#ccc" />;
+          }
+        })}
+      </View>
+    );
+  };
 
   const renderItem = ({ item, index }) => {
     const isVisible = visibleItems.includes(item.id);
+    let imagePath = getImageUrl(item.main_image_url || item.gallery_images, "thumbnail", brandedPlaceholder);
+    if (imagePath && !imagePath.startsWith("http")) {
+       imagePath = `https://backend.craftdelhi.com/${imagePath.startsWith("/") ? imagePath.slice(1) : imagePath}`;
+    }
 
     const CardContent = (
       <TouchableOpacity onPress={() => router.push({ pathname: '/ProductDetails', params: item })} activeOpacity={0.8}>
         <View style={styles.imageContainer}>
-          <Image source={{uri:item.image}} style={styles.image} />
+          <Image source={{ uri: imagePath }} style={styles.image} />
           <View style={styles.priceTag}>
-            <Text style={styles.priceText}>{item.price}</Text>
+            <Text style={styles.priceText}>₹ {formatPrice(item.price)}</Text>
           </View>
         </View>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>
-          ({item.orders}) Orders |{' '}
-          <Text style={styles.rating}>{item.rating} Ratings</Text>
-        </Text>
+        
+        <View style={styles.cardContent}>
+          <Text style={styles.title} numberOfLines={2}>{item.name}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.ordersText}>{(item.total_order || 0)} Orders</Text>
+            <View style={styles.ratingContainer}>
+              <StarRating rating={item.average_rating} />
+              <Text style={styles.ratingNumber}>{Number(item.average_rating || 0).toFixed(1)}</Text>
+            </View>
+          </View>
+        </View>
       </TouchableOpacity>
     );
 
@@ -117,20 +160,45 @@ const Justforyou = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <View style={{ padding: 20, backgroundColor: '#fff' }}>
+        <Skeleton width={160} height={28} borderRadius={6} style={{ alignSelf: 'center', marginBottom: 8 }} />
+        <Skeleton width={260} height={16} borderRadius={4} style={{ alignSelf: 'center', marginBottom: 24 }} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
+          {[1, 2, 3, 4].map(i => (
+            <View key={i} style={[styles.card, { paddingBottom: 10 }]}>
+              <Skeleton width="100%" height={140} borderRadius={0} />
+              <View style={{ padding: 10 }}>
+                <Skeleton width="100%" height={14} style={{ marginBottom: 8 }} />
+                <Skeleton width="70%" height={14} style={{ marginBottom: 16 }} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Skeleton width="30%" height={12} />
+                  <Skeleton width="40%" height={12} />
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ padding: 20, backgroundColor: '#fff' }}>
       <Text style={styles.heading}>Just For You</Text>
       <Text style={styles.subText}>
-        Discover unique, handcrafted delights, Crafted with passion, sold with honor. Delhi's finest crafts, made just for you.
+        Discover unique, handcrafted delights — crafted with passion, sold with honor.
       </Text>
       <FlatList
         data={products}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
         contentContainerStyle={{ marginTop: 20, gap: 12 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
         onViewableItemsChanged={onViewableItemsChanged.current}
         viewabilityConfig={viewabilityConfig}
         removeClippedSubviews={false}
@@ -163,9 +231,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: '48%',
     overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   imageContainer: {
-    height: 120,
+    height: 140,
     borderRadius: 4,
     overflow: 'hidden',
     position: 'relative',
@@ -177,36 +253,48 @@ const styles = StyleSheet.create({
   },
   priceTag: {
     position: 'absolute',
-    top: 8,
-    left: 6,
-    backgroundColor: '#69D297',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   priceText: {
-    color: '#fff',
-    fontSize: 12,
-    fontFamily: 'Montserrat',
+    color: '#024a63',
+    fontSize: 11,
+    fontFamily: 'mbold',
     fontWeight: '700',
   },
+  cardContent: {
+    padding: 10,
+    paddingBottom: 12,
+  },
   title: {
-    padding: 8,
-    paddingBottom: 0,
     fontSize: 12,
     color: '#024A63',
-    fontFamily: 'mmedium',
+    fontFamily: 'msemibold',
+    height: 36, // Keep fixed height for 2 lines
   },
-  subtitle: {
-    padding: 8,
-    paddingTop: 2,
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  ordersText: {
     fontSize: 10,
     color: '#959595',
-    fontFamily: 'msemibold',
-    fontWeight: '600',
+    fontFamily: 'mmedium',
   },
-  rating: {
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingNumber: {
+    fontSize: 10,
     color: '#69D297',
-    fontFamily:'mbold'
+    fontFamily: 'mbold',
+    marginLeft: 4,
   },
 });

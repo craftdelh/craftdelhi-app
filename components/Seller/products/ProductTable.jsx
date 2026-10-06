@@ -19,6 +19,7 @@ import { router, useFocusEffect } from 'expo-router';
 import Delete from '../../../assets/images/delete.svg'
 import RejectionReason from './RejectionReason';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getImageUrl } from '../../../src/utils/imageUrl';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL; 
 
@@ -68,19 +69,33 @@ const ProductTable = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-       const userData = await AsyncStorage.getItem('user');
-    const parsed = JSON.parse(userData);
-    const token = parsed?.token;
-      const response = await axios.get(`${BASE_URL}/products/get`, {
+      const userData = await AsyncStorage.getItem('user');
+      const parsed = JSON.parse(userData);
+      const token = parsed?.token;
+      
+      const response = await axios.get(`${BASE_URL}seller-store/products-view`, {
         headers: { Authorization: `${token}` }
       });
-      if (response.data.status) {
-        setProducts(response.data.data.map(p => ({
-  ...p,
-  price: Number(p.price) || 0,
-})));
+      if (response.data.data) {
+        const formatted = response.data.data.map((item, index) => {
+          const imageUrl = getImageUrl(item.main_image_url, 'thumbnail');
+          return {
+            ...item,
+            srNo: index + 1,
+            productId: item.product_sku || `PRD${item.id}`,
+            name: item.name,
+            image: imageUrl,
+            price: Number(item.price) || 0,
+            stock: item.stock,
+            status: item.status ?? 'Active',
+            description: item.description || '-',
+            teamStatus: item.team_status ?? 0,
+            id: item.id,
+          };
+        });
+        setProducts(formatted);
       } else {
-        Toast.show({ type: 'error', text1: response.data.message || 'Failed to fetch products' });
+        Toast.show({ type: 'error', text1: 'Failed to fetch products' });
       }
     } catch (err) {
       console.error(err);
@@ -98,54 +113,88 @@ const ProductTable = () => {
 
   const renderHeader = () => (
     <View style={[styles.tableRow, styles.headerRow]}>
-      {['SR. No', 'Product Id', 'Product Name', 'Product Image', 'Price', 'Stock', 'Status', 'Description', 'Actions']
+      {['SR NO', 'PRODUCT ID', 'PRODUCT NAME', 'PRODUCT IMAGE', 'PRICE', 'STOCK', 'STATUS', 'DESCRIPTION', 'TEAM STATUS', 'ACTIONS']
         .map((header, idx) => (
           <Text key={idx} style={[styles.tableCell, styles.headerText]}>{header}</Text>
         ))}
     </View>
   );
 
-  const renderItem = (item, index) => (
+  const getStatusStyle = (status) => {
+    const isActive = status == 1 || status === 'Active';
+    if (isActive) return { borderColor: '#4CAF50', backgroundColor: '#E8F5E9', color: '#4CAF50' };
+    return { borderColor: '#F44336', backgroundColor: '#FFEBEE', color: '#F44336' };
+  };
+
+  const getTeamStatusStyle = (adminApproval, teamStatusVal) => {
+    const val = adminApproval ?? teamStatusVal;
+    if (val == 1 || String(val).toLowerCase() === 'approved') return { borderColor: '#4CAF50', color: '#4CAF50', text: 'APPROVED' };
+    if (val == 2 || String(val).toLowerCase() === 'rejected') return { borderColor: '#F44336', color: '#F44336', text: 'REJECTED' };
+    return { borderColor: '#FFC107', color: '#FFC107', text: 'PENDING' };
+  };
+
+  const renderItem = (item, index) => {
+    const statusStyle = getStatusStyle(item.status);
+    const teamStyle = getTeamStatusStyle(item.admin_approval, item.teamStatus);
+    
+    const displayStatus = (item.status == 1 || item.status === 'Active') ? 'Active' : 'Inactive';
+    const displayTeamStatus = teamStyle.text;
+
+    return (
     <TouchableOpacity
       key={item.id}
       onPress={() => setSelectedId(item.id)}
       style={[styles.tableRow, selectedId === item.id && styles.selectedRow]}
     >
       <Text style={styles.tableCell}>{index + 1}</Text>
-      <Text style={styles.tableCell}>{item.id}</Text>
+      <Text style={styles.tableCell}>{item.productId}</Text>
       <Text style={styles.tableCell}>{item.name}</Text>
       <View style={styles.tableCell}>
-        <Image source={{ uri: item.main_image_url || 'https://via.placeholder.com/50' }}
-          style={{ width: 50, height: 50, borderRadius: 25 }} />
+        <Image source={{ uri: item.image || 'https://via.placeholder.com/50' }}
+          style={{ width: 50, height: 50, borderRadius: 8 }} />
       </View>
-      <Text style={styles.tableCell}>₹{item.price?.toFixed(2)}</Text>
+      <Text style={styles.tableCell}>₹{item.price?.toLocaleString('en-IN')}</Text>
       <Text style={styles.tableCell}>{item.stock}</Text>
-      <Text style={[styles.tableCell, getStatusStyle(item.status)]}>{item.status}</Text>
+      <View style={styles.tableCell}>
+        <View style={[styles.statusBadge, { borderColor: statusStyle.borderColor, backgroundColor: statusStyle.backgroundColor }]}>
+          <View style={[styles.statusDot, { backgroundColor: statusStyle.color }]} />
+          <Text style={[styles.statusText, { color: statusStyle.color }]}>{displayStatus}</Text>
+        </View>
+      </View>
       <Text style={styles.tableCell} numberOfLines={1}>{item.description || '-'}</Text>
+      <View style={styles.tableCell}>
+        <View style={[styles.teamBadge, { borderColor: teamStyle.borderColor }]}>
+          <Text style={[styles.teamText, { color: teamStyle.color }]}>{displayTeamStatus}</Text>
+        </View>
+        {displayTeamStatus === 'REJECTED' && (
+          <TouchableOpacity 
+            style={{ marginTop: 6 }} 
+            onPress={() => {
+              setSelectedProduct(item);
+              actionSheetRef.current?.show();
+            }}
+          >
+            <Text style={{ fontSize: 11, color: '#024A63', fontFamily: 'mmedium' }}>View Reason →</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       <View style={[styles.tableCell, { flexDirection: 'row', gap: 12 }]}>
         <TouchableOpacity onPress={() => router.push({ pathname: '/EditProduct', params: { item: JSON.stringify(item) } })}>
-          <Feather name="edit-3" size={18} color="#36234E" />
+          <Feather name="edit-3" size={18} color="#999" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => { setProductToDelete(item); setDeleteModalVisible(true); }}>
-          <AntDesign name="delete" size={18} color="#FF4C4C" />
+          <AntDesign name="delete" size={18} color="#999" />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
-  );
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Active': return { color: 'green', fontWeight: '600' };
-      case 'Inactive': return { color: '#EE6F69', fontWeight: '600' };
-      case 'Approved': return { color: '#FFA500', fontWeight: '600' };
-      case 'Rejected': return { color: 'red', fontWeight: '600' };
-      default: return {};
-    }
-  };
+  )};
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Products</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>My Products</Text>
+        <Text style={styles.subtitle}>Manage your products inventory, visibility, and status.</Text>
+      </View>
 
       <View style={styles.searchBox}>
         <Ionicons name="search" size={20} color="#888" />
@@ -179,7 +228,7 @@ const ProductTable = () => {
             style={styles.addButton}
             onPress={() => router.push('/(sellerTab)/AddNewProduct')}
           >
-            <AntDesign name="pluscircleo" size={18} color="white" />
+            <Feather name="plus-circle" size={18} color="white" />
             <Text style={styles.addButtonText}>Add New Product</Text>
           </TouchableOpacity>
         </View>
@@ -226,14 +275,45 @@ const ProductTable = () => {
       </Modal>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#024A63" />
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={{ minWidth: 1200 }}>
+            {renderHeader()}
+            {[1, 2, 3, 4, 5].map((_, index) => (
+              <View key={index} style={styles.tableRow}>
+                <View style={styles.tableCell}><View style={[styles.skeletonBlock, { width: '40%' }]} /></View>
+                <View style={styles.tableCell}><View style={styles.skeletonBlock} /></View>
+                <View style={styles.tableCell}><View style={styles.skeletonBlock} /></View>
+                <View style={styles.tableCell}>
+                  <View style={[styles.skeletonBlock, { width: 50, height: 50, borderRadius: 8 }]} />
+                </View>
+                <View style={styles.tableCell}><View style={styles.skeletonBlock} /></View>
+                <View style={styles.tableCell}><View style={[styles.skeletonBlock, { width: '30%' }]} /></View>
+                <View style={styles.tableCell}>
+                  <View style={[styles.skeletonBlock, { height: 24, borderRadius: 12, width: '80%' }]} />
+                </View>
+                <View style={styles.tableCell}><View style={styles.skeletonBlock} /></View>
+                <View style={styles.tableCell}>
+                  <View style={[styles.skeletonBlock, { height: 24, borderRadius: 12, width: '80%' }]} />
+                </View>
+                <View style={[styles.tableCell, { flexDirection: 'row', gap: 12 }]}>
+                  <View style={[styles.skeletonBlock, { width: 24, height: 24, borderRadius: 12 }]} />
+                  <View style={[styles.skeletonBlock, { width: 24, height: 24, borderRadius: 12 }]} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
           <View style={{ minWidth: 1200 }}>
             {renderHeader()}
-            {filteredData.map((item, index) => renderItem(item, index))}
+            {filteredData.length > 0 ? (
+              filteredData.map((item, index) => renderItem(item, index))
+            ) : (
+              <View style={{ padding: 40, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: 'mmedium', fontSize: 16, color: '#666' }}>No products found.</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       )}
@@ -254,11 +334,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 12,
   },
+  titleContainer: {
+    marginBottom: 20,
+  },
   title: {
     fontSize: 18,
-    marginBottom: 20,
+    marginBottom: 4,
     color: '#36234E',
     fontFamily: 'mbold',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    fontFamily: 'mmedium',
   },
   searchBox: {
     flexDirection: 'row',
@@ -369,7 +457,39 @@ const styles = StyleSheet.create({
   headerText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 12,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  teamBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    backgroundColor: 'transparent',
+  },
+  teamText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   confirmModal: {
   width: 300,
@@ -408,4 +528,11 @@ confirmButton: {
   alignItems: 'center',
 },
 
+  skeletonBlock: {
+    width: '90%',
+    height: 16,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    opacity: 0.6,
+  }
 });

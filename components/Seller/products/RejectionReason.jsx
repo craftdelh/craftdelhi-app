@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native'
+import { router } from 'expo-router';
 
 const RejectionReason = ({ product, onClose }) => {
   return (
@@ -58,9 +59,16 @@ const RejectionReason = ({ product, onClose }) => {
           <Text style={styles.cardHeaderText}>VIOLATION DETAILS</Text>
         </View>
         <View style={styles.cardBody}>
-          <Text style={styles.cardBodyText}>
-            Images uploaded do not meet the quality standards or show incorrect product angles.
+          <Text style={[styles.cardBodyText, { fontFamily: 'mbold', marginBottom: 4 }]}>
+            {product.reject_reason || product.admin_reason || product.rejection_reason || product.admin_rejection_reason || product.reason || "Violation"}
           </Text>
+          {(product.reject_description || product.rejection_description) ? (
+            <Text style={styles.cardBodyText}>
+              {product.reject_description || product.rejection_description}
+            </Text>
+          ) : (
+            <Text style={styles.cardBodyText}>Images uploaded do not meet the quality standards or show incorrect product angles.</Text>
+          )}
         </View>
       </View>
 
@@ -69,7 +77,10 @@ const RejectionReason = ({ product, onClose }) => {
         <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity style={styles.editButton} onPress={() => {
+          onClose();
+          router.push({ pathname: '/EditProduct', params: { item: JSON.stringify(product) } });
+        }}>
           <Text style={styles.editText}>Edit Product</Text>
         </TouchableOpacity>
       </View>

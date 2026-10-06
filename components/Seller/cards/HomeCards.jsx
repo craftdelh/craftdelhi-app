@@ -105,19 +105,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontFamily: 'Montserrat-Bold', // Make sure it's loaded in your project
+    fontFamily: 'mbold', // Make sure it's loaded in your project
     color: 'black',
     lineHeight: 24,
   },
   count: {
     fontSize: 24,
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'mbold',
     color: 'black',
     lineHeight: 32,
   },
   change: {
     fontSize: 12,
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'mbold',
     color: '#2E54D9',
     lineHeight: 24,
   },

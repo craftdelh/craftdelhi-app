@@ -1,51 +1,92 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
-  FlatList,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
   Modal,
   Pressable,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { dummyOrders } from '../../../sellerdata';
 import ActionSheet from "react-native-actions-sheet";
 import SaleSummary from './SaleSummary';
+import axios from 'axios';
+import { useUser } from '../../../context/UserContext';
 
-// Add 'All' in statuses for showing all data
-const statuses = ['All Payment Status', 'Delivered', 'Cancelled', 'Processing'];
+const statuses = ['All Payment Status', 'Delivered', 'Cancelled', 'Pending', 'Accepted', 'Out for Delivery'];
 
+const statusMap = {
+  0: "Pending",
+  1: "Accepted",
+  2: "Out for Delivery",
+  3: "Delivered",
+  4: "Cancelled",
+};
 
 const RecentOrders = () => {
+  const { user } = useUser();
+  const [ordersData, setOrdersData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [statusFilter, setStatusFilter] = useState('All Payment Status');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const actionSheetRef = useRef(null);
 
-  const filteredData = dummyOrders.filter(item => {
-  const statusMatch = statusFilter === 'All Payment Status' || item.status === statusFilter;
-  const searchMatch =
-    item.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.productName.toLowerCase().includes(searchQuery.toLowerCase());
-  return statusMatch && searchMatch;
-});
-const [selectedOrder, setSelectedOrder] = useState(null);
+  const fetchRecentOrders = async () => {
+    try {
+      const res = await axios.get(
+        `${process.env.EXPO_PUBLIC_BASE_URL}order/recentorders`,
+        {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+          },
+        }
+      );
+      if (res.data?.status && res.data?.data) {
+        setOrdersData(res.data.data);
+      }
+    } catch (error) {
+      console.error("Fetch orders error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const handleSaleSummary = (item) => {
-  setSelectedOrder(item);
-  actionSheetRef.current?.show();
-};
+  useEffect(() => {
+    if (user?.token) {
+      fetchRecentOrders();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const filteredData = ordersData.filter(item => {
+    const itemStatus = statusMap[item.order_status] || "Unknown";
+    const statusMatch = statusFilter === 'All Payment Status' || itemStatus === statusFilter;
+    const customerMatch = item.buyer_name ? item.buyer_name.toLowerCase().includes(searchQuery.toLowerCase()) : false;
+    const productMatch = item.items?.[0]?.product_name ? item.items[0].product_name.toLowerCase().includes(searchQuery.toLowerCase()) : false;
+    const searchMatch = searchQuery === '' || customerMatch || productMatch;
+    return statusMatch && searchMatch;
+  });
+
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const handleSaleSummary = (item) => {
+    setSelectedOrder(item);
+    actionSheetRef.current?.show();
+  };
 
 
   const renderHeader = () => (
     <View style={[styles.tableRow, styles.headerRow]}>
       {[
-        'Order ID', 'Customer Name', 'Product Name', 'Qty', 'Date',
-        'Status', 'Track #', 'Amount', 'Note', 'Shipping Info', 'Actions'
+        'Order ID', 'Customer', 'Product', 'Qty', 'Date',
+        'Status', 'Amount', 'Action'
       ].map((header, idx) => (
         <Text key={idx} style={[styles.tableCell, styles.headerText]}>
           {header}
@@ -54,32 +95,32 @@ const handleSaleSummary = (item) => {
     </View>
   );
 
- const renderItem = (item) => (
-    <TouchableOpacity
-      key={item.id}
-      onPress={() => setSelectedId(item.id)}
-      style={[
-        styles.tableRow,
-        selectedId === item.id && styles.selectedRow,
-      ]}
-    >
-      <Text style={styles.tableCell}>{item.id}</Text>
-      <Text style={styles.tableCell}>{item.customerName}</Text>
-      <Text style={styles.tableCell}>{item.productName}</Text>
-      <Text style={styles.tableCell}>{item.quantity}</Text>
-      <Text style={styles.tableCell}>{item.date}</Text>
-      <Text style={[styles.tableCell, getStatusStyle(item.status)]}>
-        {item.status}
-      </Text>
-      <Text style={styles.tableCell}>{item.trackNumber}</Text>
-      <Text style={styles.tableCell}>{item.totalAmount || '-'}</Text>
-      <Text style={styles.tableCell}>{item.buyerNote || '-'}</Text>
-      <Text style={styles.tableCell}>{item.shippingInfo || '-'}</Text>
-      <TouchableOpacity onPress={()=>handleSaleSummary(item)} style={styles.actionCell}>
-        <Feather name="eye" size={18} color="#36234E" />
+ const renderItem = (item) => {
+    const itemStatus = statusMap[item.order_status] || "Unknown";
+    return (
+      <TouchableOpacity
+        key={item.order_uid}
+        onPress={() => setSelectedId(item.order_uid)}
+        style={[
+          styles.tableRow,
+          selectedId === item.order_uid && styles.selectedRow,
+        ]}
+      >
+        <Text style={styles.tableCell}>{item.order_uid}</Text>
+        <Text style={styles.tableCell}>{item.buyer_name || "-"}</Text>
+        <Text style={styles.tableCell}>{item.items?.[0]?.product_name || "-"}</Text>
+        <Text style={styles.tableCell}>{item.items?.[0]?.quantity || "-"}</Text>
+        <Text style={styles.tableCell}>{item.created_at ? new Date(item.created_at).toLocaleDateString('en-GB') : "-"}</Text>
+        <Text style={[styles.tableCell, getStatusStyle(itemStatus)]}>
+          {itemStatus}
+        </Text>
+        <Text style={styles.tableCell}>{item.total_amount ? `₹${parseFloat(Math.abs(item.total_amount)).toLocaleString('en-IN')}` : '-'}</Text>
+        <TouchableOpacity onPress={()=>handleSaleSummary(item)} style={styles.actionCell}>
+          <Feather name="eye" size={18} color="#36234E" />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
-  );
+    );
+  };
 
 
   // Optional: color coding status
@@ -89,12 +130,20 @@ const handleSaleSummary = (item) => {
         return { color: 'green', fontWeight: '600' };
       case 'Cancelled':
         return { color: 'red', fontWeight: '600' };
-      case 'Processing':
-        return { color: '#FFA500', fontWeight: '600' }; // orange
+      case 'Pending':
+        return { color: '#eab308', fontWeight: '600' }; // yellow
+      case 'Accepted':
+        return { color: '#3b82f6', fontWeight: '600' }; // blue
+      case 'Out for Delivery':
+        return { color: '#f97316', fontWeight: '600' }; // orange
       default:
         return {};
     }
   };
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0B3C5D" style={{ marginTop: 20 }} />;
+  }
 
   return (
     <View style={styles.container}>
@@ -174,7 +223,15 @@ const handleSaleSummary = (item) => {
         <View style={{ minWidth: 1200 }}>
           {renderHeader()}
           {/* Replace FlatList with map */}
-          {filteredData.map(item => renderItem(item))}
+          {filteredData.length === 0 ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, color: '#888', fontFamily: 'mregular' }}>
+                No order found
+              </Text>
+            </View>
+          ) : (
+            filteredData.map(item => renderItem(item))
+          )}
         </View>
       </ScrollView>
 

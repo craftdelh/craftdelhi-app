@@ -11,8 +11,8 @@ import {
 } from "redux-persist";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import CartReducer from "./redux/CartReducer";
-import wishlistReducer from "./redux/WishListReducer";
+import CartReducer from "./redux/CartReducer.js";
+import wishlistReducer from "./redux/WishListReducer.js";
 
 const cartPersistConfig = {
   key: "cart",

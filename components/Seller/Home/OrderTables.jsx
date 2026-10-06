@@ -196,7 +196,15 @@ const OrderTables = () => {
       >
         <View style={{ minWidth: 1200 }}>
           {renderHeader()}
-          {filteredData.map(item => renderItem(item))}
+          {filteredData.length === 0 ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, color: '#888', fontFamily: 'mregular' }}>
+                No order found
+              </Text>
+            </View>
+          ) : (
+            filteredData.map(item => renderItem(item))
+          )}
         </View>
       </ScrollView>
 

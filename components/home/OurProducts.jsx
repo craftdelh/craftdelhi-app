@@ -1,4 +1,4 @@
-import { useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import React, { useRef, useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -8,55 +8,154 @@ import {
   Image,
   ScrollView,
   Animated,
+  ActivityIndicator
 } from 'react-native';
+import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
+import Skeleton from '../Skeleton';
 
-const categories = [
-  { name: 'Handmade Paper', image: require('../../assets/images/image1.png') },
-  { name: 'Printing', image: require('../../assets/images/image2.png') },
-  { name: 'Craft Kits', image: require('../../assets/images/image3.jpg') },
-  { name: 'Wall Art', image: require('../../assets/images/image1.png') },
-  { name: 'Stationery', image: require('../../assets/images/image2.png') },
-  { name: 'Gift Wrap', image: require('../../assets/images/image3.jpg') },
-  { name: 'Personalized', image: require('../../assets/images/image1.png') },
-];
+const brandedPlaceholder = "https://craftdelhi.com/craftdelhi-placeholder.svg";
+
+const SIZE_ORDER = {
+  icon: ["icon", "thumbnail", "full"],
+  thumbnail: ["thumbnail", "full", "icon"],
+  full: ["full", "thumbnail", "icon"],
+};
+
+const parseImage = (image) => {
+  if (typeof image !== "string") return image;
+  const value = image.trim();
+  if (!value || value === "[object Object]") return null;
+  if ((value.startsWith("{") && value.endsWith("}")) ||
+      (value.startsWith("[") && value.endsWith("]"))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
+const getImageUrl = (image, preferredSize = "thumbnail", fallback = "") => {
+  const parsed = parseImage(image);
+  if (typeof parsed === "string") return parsed;
+  if (Array.isArray(parsed)) {
+    return getImageUrl(parsed[0], preferredSize, fallback);
+  }
+  if (!parsed || typeof parsed !== "object") return fallback;
+
+  const keys = [
+    ...(SIZE_ORDER[preferredSize] || SIZE_ORDER.thumbnail),
+    "original",
+    "original_url",
+    "image_url",
+    "url",
+    "src",
+    "path",
+  ];
+  for (const key of keys) {
+    if (parsed[key]) {
+      const resolved = getImageUrl(parsed[key], preferredSize);
+      if (resolved) return resolved;
+    }
+  }
+  return fallback;
+};
 
 const OurProducts = () => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const scrollXRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-const navigation = useNavigation();
+  const navigation = useNavigation();
+
   const visibleCategories = showAll ? categories : categories.slice(0, 6);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${process.env.EXPO_PUBLIC_BASE_URL}categories/get`);
+      if (response.data && response.data.status) {
+        const formatted = response.data.data.map(item => {
+          let imagePath = getImageUrl(item.category_image, "thumbnail");
+          if (imagePath && typeof imagePath === 'string' && !imagePath.startsWith("http")) {
+             imagePath = `https://backend.craftdelhi.com/${imagePath.startsWith("/") ? imagePath.slice(1) : imagePath}`;
+          }
+          return {
+            id: item.slug || item.id,
+            realId: item.id,
+            name: item.name,
+            image: imagePath || brandedPlaceholder
+          };
+        });
+        setCategories(formatted);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleToggleShowAll = () => {
     setShowAll(prev => !prev);
   };
 
-  const handleCategoryPress = (categoryName) => {
-    navigation.navigate('ProductCategories', { category: categoryName });
+  const handleCategoryPress = (categoryId, categoryName, realId) => {
+    router.push({ pathname: '/ProductCategories', params: { category: categoryId, name: categoryName, realId } });
   };
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    if (!loading && categories.length > 0) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }
 
     if (showAll && scrollXRef.current) {
       setTimeout(() => {
         scrollXRef.current.scrollToEnd({ animated: true });
       }, 100); 
     }
-  }, [showAll]);
+  }, [showAll, loading, categories.length]);
+
+  if (loading) {
+    return (
+      <View style={{ padding: 20 }}>
+        <View style={styles.headerRow}>
+          <Skeleton width={120} height={24} borderRadius={4} />
+          <Skeleton width={100} height={16} borderRadius={4} />
+        </View>
+        <View style={{ flexDirection: 'row', marginTop: 20, overflow: 'hidden' }}>
+          {[1, 2, 3].map(i => (
+            <View key={i} style={[styles.itemBox, { paddingVertical: 10 }]}>
+              <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 10 }} />
+              <Skeleton width={80} height={16} borderRadius={4} />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  if (categories.length === 0) return null;
 
   return (
     <View style={{ padding: 20 }}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Our Products</Text>
-        <TouchableOpacity onPress={handleToggleShowAll}>
+        <TouchableOpacity onPress={handleToggleShowAll} style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={styles.seeAllText}>
             {showAll ? 'Show Less' : 'See All Categories'}
           </Text>
+          <Ionicons name="chevron-forward" size={16} color="#2E54D9" style={{ marginLeft: 2 }} />
         </TouchableOpacity>
       </View>
 
@@ -67,8 +166,8 @@ const navigation = useNavigation();
           showsHorizontalScrollIndicator={false}
         >
           {visibleCategories.map((item, index) => (
-            <TouchableOpacity key={index}  onPress={() => handleCategoryPress(item.name)} style={styles.itemBox}>
-              <Image source={item.image} style={styles.imageCircle} />
+            <TouchableOpacity key={item.id} onPress={() => handleCategoryPress(item.id, item.name, item.realId)} style={styles.itemBox}>
+              <Image source={{ uri: item.image }} style={styles.imageCircle} />
               <Text style={styles.itemText}>{item.name}</Text>
             </TouchableOpacity>
           ))}
