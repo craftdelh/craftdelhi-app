@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,28 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { Orderinfo } from '../../../sellerdata'; 
 import ActionSheet from "react-native-actions-sheet";
 import OrderActionSheet from './OrderActionSheet';
 import { router } from 'expo-router';
+import axios from 'axios';
+import { useUser } from '../../../context/UserContext';
 
+const statusMap = {
+  0: "Pending",
+  1: "Accepted",
+  2: "Out for Delivery",
+  3: "Delivered",
+  4: "Cancelled",
+};
 
 const OrderTables = () => {
+  const { user } = useUser();
+  const [ordersData, setOrdersData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
@@ -26,18 +39,51 @@ const OrderTables = () => {
   const actionSheetRef = useRef(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const filteredData = Orderinfo.filter(item => {
-    const nameMatch = item.customerName.toLowerCase().includes(searchQuery.toLowerCase());
-    const orderMatch = orderStatusFilter === 'All' || item.status === orderStatusFilter;
-    const paymentMatch = paymentStatusFilter === 'All' || item.paymentStatus === paymentStatusFilter;
-    return nameMatch && orderMatch && paymentMatch;
+  const fetchOrders = async () => {
+    try {
+      const res = await axios.get(
+        `${process.env.EXPO_PUBLIC_BASE_URL}order/recentorders`,
+        {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+          },
+        }
+      );
+      if (res.data?.status && res.data?.data) {
+        setOrdersData(res.data.data);
+      }
+    } catch (error) {
+      console.error("Fetch orders error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchOrders();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const filteredData = ordersData.filter(item => {
+    const itemStatus = statusMap[item.order_status] || "Unknown";
+    const nameMatch = item.buyer_name ? item.buyer_name.toLowerCase().includes(searchQuery.toLowerCase()) : false;
+    const orderMatch = orderStatusFilter === 'All' || itemStatus === orderStatusFilter;
+    
+    // Assume payment status is available or default to "Paid" for testing if not
+    const paymentStat = String(item.payment_status || "Paid");
+    const paymentMatch = paymentStatusFilter === 'All' || paymentStat === paymentStatusFilter;
+    
+    return (nameMatch || searchQuery === '') && orderMatch && paymentMatch;
   });
 
   const renderHeader = () => (
     <View style={[styles.tableRow, styles.headerRow]}>
       {[
         'Order ID', 'Order Date','Customer Name', 'Product Name', 'Order Status', 'Quantity',
-        'Payment Status', 'Total Amount', 'Customer Description','Actions'
+        'Payment Status', 'Total Amount', 'Customer Note','Actions'
       ].map((header, idx) => (
         <Text key={idx} style={[styles.tableCell, styles.headerText]}>
           {header}
@@ -46,49 +92,55 @@ const OrderTables = () => {
     </View>
   );
 
-  const renderItem = (item) => (
-  <TouchableOpacity
-    key={item.id}
-    onPress={() => setSelectedId(item.id)}
-    style={[
-      styles.tableRow,
-      selectedId === item.id && styles.selectedRow,
-      
-    ]}
-  >
-    <Text style={styles.tableCell}>{item.id}</Text>
-    <Text style={styles.tableCell}>{item.date}</Text>
-    <Text style={styles.tableCell}>{item.customerName}</Text>
-    <Text style={styles.tableCell}>{item.productName}</Text>
-    <Text style={[styles.tableCell, getStatusStyle(item.status)]}>
-      {item.status}
-    </Text>
-    <Text style={styles.tableCell}>{item.quantity}</Text>
-    <Text style={styles.tableCell}>{item.paymentStatus}</Text>
-    <Text style={styles.tableCell}>
-      {typeof item.totalAmount === 'number' ? item.totalAmount.toFixed(2) : '-'}
-    </Text>
-    <Text style={styles.tableCell}>{item.customerNote || '-'}</Text>
+  const renderItem = (item) => {
+    const itemStatus = statusMap[item.order_status] || "Unknown";
+    const paymentStat = String(item.payment_status || "Paid");
+    return (
+      <TouchableOpacity
+        key={item.order_uid}
+        onPress={() => setSelectedId(item.order_uid)}
+        style={[
+          styles.tableRow,
+          selectedId === item.order_uid && styles.selectedRow,
+        ]}
+      >
+        <Text style={styles.tableCell}>{item.order_uid}</Text>
+        <Text style={styles.tableCell}>{item.created_at ? new Date(item.created_at).toLocaleDateString('en-GB') : "-"}</Text>
+        <Text style={styles.tableCell}>{item.buyer_name || "-"}</Text>
+        <Text style={styles.tableCell}>{item.items?.[0]?.product_name || "-"}</Text>
+        <Text style={[styles.tableCell, getStatusStyle(itemStatus)]}>
+          {itemStatus}
+        </Text>
+        <Text style={styles.tableCell}>{item.items?.[0]?.quantity || "-"}</Text>
+        <Text style={styles.tableCell}>
+          <Text style={{color: paymentStat.toUpperCase() === 'PAID' ? 'green' : 'red', backgroundColor: paymentStat.toUpperCase() === 'PAID' ? '#E8F5E9' : '#FFEBEE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', fontWeight: 'bold', fontSize: 12}}>
+            {paymentStat.toUpperCase()}
+          </Text>
+        </Text>
+        <Text style={styles.tableCell}>
+          {item.total_amount ? `₹${parseFloat(Math.abs(item.total_amount)).toLocaleString('en-IN')}` : '-'}
+        </Text>
+        <Text style={styles.tableCell}>{item.order_notes || item.note || '-'}</Text>
 
-    <View style={[styles.tableCell, { flexDirection: 'row', gap: 10 }]}>
-      <TouchableOpacity onPress={() => {
-  setSelectedOrder(item); 
-  actionSheetRef.current?.show(); 
-}}>
-        <Feather name="eye" size={18} color="#36234E" />
+        <View style={[styles.tableCell, { flexDirection: 'row', gap: 15 }]}>
+          <TouchableOpacity onPress={() => {
+            setSelectedOrder(item); 
+            actionSheetRef.current?.show(); 
+          }}>
+            <Feather name="eye" size={18} color="#36234E" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            router.push({
+              pathname: '/EditOrder',
+              params: { item: JSON.stringify(item) }  
+            });
+          }}>
+            <Feather name="edit-3" size={18} color="#36234E" />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => {
-        router.push({
-          pathname: '/EditOrder',
-          params: { item: item }  
-        });
-      }}>
-        <Feather name="edit-3" size={18} color="#36234E" />
-      </TouchableOpacity>
-    </View>
-  </TouchableOpacity>
-);
-
+    );
+  };
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -97,7 +149,9 @@ const OrderTables = () => {
       case 'Cancelled':
         return { color: 'red', fontWeight: '600' };
       case 'Pending':
-        return { color: '#FFA500', fontWeight: '600' };
+        return { color: '#eab308', fontWeight: '600' };
+      case 'Accepted':
+        return { color: '#3b82f6', fontWeight: '600' };
       default:
         return {};
     }

@@ -7,10 +7,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { getImageUrl } from '../../../utils/imageUrl';
 
-const API_BASE = "https://backend.craftdelhi.com/chat";
+import { useUser } from '../../../../context/UserContext';
+
+const API_BASE = process.env.EXPO_PUBLIC_CHAT_API_BASE || "https://backend.craftdelhi.com/chat";
 const APP_BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "https://backend.craftdelhi.com";
+const SOCKET_PATH = process.env.EXPO_PUBLIC_SOCKET_PATH || "/chat/socket.io";
 
 export default function MessagesScreen() {
+  const { user } = useUser();
   const [rooms, setRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
@@ -30,11 +35,13 @@ export default function MessagesScreen() {
   const flatListRef = useRef(null);
 
   useEffect(() => {
-    initChat();
+    if (user?.token) {
+      initChat(user.token);
+    }
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (showCreateModal) {
@@ -68,70 +75,111 @@ export default function MessagesScreen() {
     setLoadingContext(false);
   };
 
-  const initChat = async () => {
+  const initChat = async (token) => {
     try {
-      const userData = await AsyncStorage.getItem('user');
-      const parsed = JSON.parse(userData);
-      const token = parsed?.token;
+      console.log("initChat started");
       setTokenStr(token);
       
-      const sId = await AsyncStorage.getItem('craftdelhiseller_id');
-      setSellerId(sId || parsed?.user?.id);
+      const sId = user?.id || user?._id || user?.seller_id || user?.data?.id || user?.user?.id;
+      
+      // Fallback if context is missing id
+      let finalSellerId = sId;
+      if (!finalSellerId) {
+        const storedSId = await AsyncStorage.getItem('craftdelhiseller_id');
+        finalSellerId = storedSId;
+      }
+      setSellerId(finalSellerId);
+      
+      console.log("Token exists?", !!token, "SellerId:", finalSellerId);
 
-      if (!token) return;
+      if (!token) {
+        console.log("No token, returning early");
+        return;
+      }
 
-      socketRef.current = io(API_BASE, {
-        auth: { token: `Bearer ${token}` },
-        transports: ['websocket'],
+      console.log("Connecting socket to:", SOCKET_URL, "path:", SOCKET_PATH);
+      socketRef.current = io(SOCKET_URL, {
+        path: SOCKET_PATH,
+        auth: { token: token }, // FIX: Removed 'Bearer ' prefix
+        transports: ['websocket', 'polling'], // Added polling as fallback
       });
 
-      socketRef.current.on("connect", () => console.log("Socket connected!"));
+      socketRef.current.on("connect", () => console.log("Socket connected! ID:", socketRef.current.id));
+      socketRef.current.on("connect_error", (err) => console.log("Socket connect error:", err.message));
+      socketRef.current.on("disconnect", (reason) => console.log("Socket disconnected:", reason));
       
-      socketRef.current.on("message", (msg) => {
-        setMessages(prev => [...prev, msg]);
+      socketRef.current.on("message_received", (msg) => {
+        console.log("New message received via socket:", msg);
+        setMessages(prev => {
+          // simple duplicate check
+          if (prev.some(m => (m._id && m._id === msg._id) || (m.tempId && m.tempId === msg.tempId))) return prev;
+          return [...prev, msg];
+        });
       });
 
       fetchRooms(token);
     } catch (e) {
-      console.error(e);
+      console.error("initChat error:", e);
     }
   };
 
   const fetchRooms = async (token) => {
     try {
+      console.log(`Fetching rooms from ${API_BASE}/rooms...`);
       const res = await axios.get(`${API_BASE}/rooms`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log("Fetch rooms response keys:", Object.keys(res.data));
       const data = res.data?.data || [];
+      console.log("Number of rooms fetched:", data.length);
       setRooms(data);
-      if (data.length > 0) {
-        socketRef.current?.emit("join_rooms", data.map(r => r.roomId || r._id || r.id));
-      }
+      // Removed join_rooms emit here, craftBuyer joins on room selection
     } catch (err) {
-      console.error("Rooms fetch error", err);
+      console.error("Rooms fetch error", err?.response?.data || err.message);
     } finally {
       setLoadingRooms(false);
     }
   };
 
-  const selectRoom = (room) => {
+  const selectRoom = async (room) => {
     const id = room.roomId || room._id || room.id;
+    console.log("Selecting room ID:", id);
     setSelectedRoomId(id);
-    setMessages(room.messages || []); 
-    socketRef.current?.emit("mark_read", { roomId: id, type: 'SELLER' });
+    
+    // Fetch messages
+    try {
+      const res = await axios.get(`${API_BASE}/messages?roomId=${id}&page=1&limit=50`, {
+        headers: { Authorization: `Bearer ${tokenStr}` }
+      });
+      setMessages(res.data?.data || []);
+    } catch(e) {
+      console.error("Failed to fetch messages:", e);
+      setMessages([]);
+    }
+    
+    socketRef.current?.emit("join_room", { roomId: id });
+    socketRef.current?.emit("mark_room_read", { roomId: id });
   };
 
   const sendMessage = () => {
-    if (!inputText.trim() || !selectedRoomId) return;
+    console.log("sendMessage triggered. inputText:", inputText, "roomId:", selectedRoomId, "sellerId:", sellerId);
+    if (!inputText.trim() || !selectedRoomId) {
+       console.log("Cannot send message: Empty text or no room ID");
+       return;
+    }
+    
+    const tempId = Date.now().toString() + Math.random().toString(36).substring(7);
     const msgData = {
       roomId: selectedRoomId,
-      senderType: 'SELLER',
       senderId: sellerId,
       message: inputText,
-      attachmentUrl: "",
+      tempId,
     };
-    socketRef.current?.emit("sendMessage", msgData);
-    setMessages(prev => [...prev, { ...msgData, createdAt: new Date().toISOString(), isOptimistic: true }]);
+    
+    console.log("Emitting send_message with payload:", msgData);
+    socketRef.current?.emit("send_message", msgData);
+    
+    setMessages(prev => [...prev, { ...msgData, createdAt: new Date().toISOString(), status: "sending" }]);
     setInputText("");
   };
 
