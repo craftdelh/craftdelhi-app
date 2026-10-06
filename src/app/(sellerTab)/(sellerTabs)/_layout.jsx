@@ -1,8 +1,11 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Entypo, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useUser } from '../../../../context/UserContext';
 
 export default function SellerTabs() {
+  const { totalUnread } = useUser();
+  
   return (
     <Tabs
       screenOptions={{
@@ -30,6 +33,8 @@ export default function SellerTabs() {
         name="Chat"
         options={{
           title: 'Chat',
+          tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
+          tabBarBadgeStyle: { backgroundColor: 'red', color: 'white' },
           tabBarIcon: ({ color }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={22} color={color} />
           ),

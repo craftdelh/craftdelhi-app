@@ -15,15 +15,13 @@ const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "https://backend.craftd
 const SOCKET_PATH = process.env.EXPO_PUBLIC_SOCKET_PATH || "/chat/socket.io";
 
 export default function MessagesScreen() {
-  const { user } = useUser();
-  const [rooms, setRooms] = useState([]);
-  const [loadingRooms, setLoadingRooms] = useState(true);
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const { user, socket, rooms, setRooms } = useUser();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
-  const socketRef = useRef(null);
   const [sellerId, setSellerId] = useState(null);
-  const [tokenStr, setTokenStr] = useState("");
+  const [typingRooms, setTypingRooms] = useState({});
+  const activeRoomRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
   
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -35,13 +33,48 @@ export default function MessagesScreen() {
   const flatListRef = useRef(null);
 
   useEffect(() => {
-    if (user?.token) {
-      initChat(user.token);
-    }
-    return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+    const fetchSellerId = async () => {
+      const sId = user?.id || user?._id || user?.seller_id || user?.data?.id || user?.user?.id;
+      let finalSellerId = sId;
+      if (!finalSellerId) {
+        finalSellerId = await AsyncStorage.getItem('craftdelhiseller_id');
+      }
+      setSellerId(finalSellerId);
     };
+    fetchSellerId();
   }, [user]);
+
+  useEffect(() => {
+    if (!socket || !sellerId) return;
+
+    const handleMsg = (msg) => {
+      if (String(activeRoomRef.current) === String(msg.roomId)) {
+        setMessages(prev => {
+          if (prev.some(m => (m._id && m._id === msg._id) || (m.tempId && m.tempId === msg.tempId))) return prev;
+          return [...prev, msg];
+        });
+        socket.emit("mark_room_read", { roomId: msg.roomId });
+        setRooms(prevRooms => prevRooms.map(r => {
+          if (String(r.roomId || r._id || r.id) === String(msg.roomId)) return { ...r, unreadCount: 0 };
+          return r;
+        }));
+      }
+    };
+
+    const handleTyping = (payload) => {
+      const { userId, roomId: typingRoomId, isTyping } = payload;
+      if (String(userId) === String(sellerId)) return;
+      setTypingRooms(prev => ({ ...prev, [typingRoomId]: isTyping }));
+    };
+
+    socket.on("message_received", handleMsg);
+    socket.on("user_typing", handleTyping);
+
+    return () => {
+      socket.off("message_received", handleMsg);
+      socket.off("user_typing", handleTyping);
+    };
+  }, [socket, sellerId, setRooms]);
 
   useEffect(() => {
     if (showCreateModal) {
@@ -56,6 +89,7 @@ export default function MessagesScreen() {
   const fetchProductsContext = async () => {
     setLoadingContext(true);
     try {
+      const tokenStr = user?.token || "";
       const res = await axios.get(`${APP_BASE_URL}seller-store/products-view`, {
         headers: { Authorization: tokenStr }
       });
@@ -67,6 +101,7 @@ export default function MessagesScreen() {
   const fetchOrdersContext = async () => {
     setLoadingContext(true);
     try {
+      const tokenStr = user?.token || "";
       const res = await axios.get(`${APP_BASE_URL}order/recentorders`, {
         headers: { Authorization: `Bearer ${tokenStr}` }
       });
@@ -75,90 +110,42 @@ export default function MessagesScreen() {
     setLoadingContext(false);
   };
 
-  const initChat = async (token) => {
-    try {
-      console.log("initChat started");
-      setTokenStr(token);
-      
-      const sId = user?.id || user?._id || user?.seller_id || user?.data?.id || user?.user?.id;
-      
-      // Fallback if context is missing id
-      let finalSellerId = sId;
-      if (!finalSellerId) {
-        const storedSId = await AsyncStorage.getItem('craftdelhiseller_id');
-        finalSellerId = storedSId;
-      }
-      setSellerId(finalSellerId);
-      
-      console.log("Token exists?", !!token, "SellerId:", finalSellerId);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const selectedRoomId = selectedRoom?.roomId || selectedRoom?._id || selectedRoom?.id;
 
-      if (!token) {
-        console.log("No token, returning early");
-        return;
-      }
-
-      console.log("Connecting socket to:", SOCKET_URL, "path:", SOCKET_PATH);
-      socketRef.current = io(SOCKET_URL, {
-        path: SOCKET_PATH,
-        auth: { token: token }, // FIX: Removed 'Bearer ' prefix
-        transports: ['websocket', 'polling'], // Added polling as fallback
-      });
-
-      socketRef.current.on("connect", () => console.log("Socket connected! ID:", socketRef.current.id));
-      socketRef.current.on("connect_error", (err) => console.log("Socket connect error:", err.message));
-      socketRef.current.on("disconnect", (reason) => console.log("Socket disconnected:", reason));
-      
-      socketRef.current.on("message_received", (msg) => {
-        console.log("New message received via socket:", msg);
-        setMessages(prev => {
-          // simple duplicate check
-          if (prev.some(m => (m._id && m._id === msg._id) || (m.tempId && m.tempId === msg.tempId))) return prev;
-          return [...prev, msg];
-        });
-      });
-
-      fetchRooms(token);
-    } catch (e) {
-      console.error("initChat error:", e);
-    }
-  };
-
-  const fetchRooms = async (token) => {
-    try {
-      console.log(`Fetching rooms from ${API_BASE}/rooms...`);
-      const res = await axios.get(`${API_BASE}/rooms`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log("Fetch rooms response keys:", Object.keys(res.data));
-      const data = res.data?.data || [];
-      console.log("Number of rooms fetched:", data.length);
-      setRooms(data);
-      // Removed join_rooms emit here, craftBuyer joins on room selection
-    } catch (err) {
-      console.error("Rooms fetch error", err?.response?.data || err.message);
-    } finally {
-      setLoadingRooms(false);
-    }
+  const getRoomName = (room) => {
+    if (!room) return "Chat";
+    const otherUser = room.participants?.find(p => String(p.userId) !== String(sellerId));
+    return otherUser?.name || "Admin";
   };
 
   const selectRoom = async (room) => {
     const id = room.roomId || room._id || room.id;
     console.log("Selecting room ID:", id);
-    setSelectedRoomId(id);
+    setSelectedRoom(room);
+    activeRoomRef.current = id;
     
-    // Fetch messages
+    // clear badge locally
+    setRooms(prevRooms => prevRooms.map(r => {
+      const rId = r.roomId || r._id || r.id;
+      if (String(rId) === String(id)) return { ...r, unreadCount: 0 };
+      return r;
+    }));
+    
     try {
       const res = await axios.get(`${API_BASE}/messages?roomId=${id}&page=1&limit=50`, {
-        headers: { Authorization: `Bearer ${tokenStr}` }
+        headers: { Authorization: `Bearer ${user?.token}` }
       });
-      setMessages(res.data?.data || []);
+      let fetchedMessages = res.data?.data || [];
+      fetchedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      setMessages(fetchedMessages);
     } catch(e) {
       console.error("Failed to fetch messages:", e);
       setMessages([]);
     }
     
-    socketRef.current?.emit("join_room", { roomId: id });
-    socketRef.current?.emit("mark_room_read", { roomId: id });
+    socket?.emit("join_room", { roomId: id });
+    socket?.emit("mark_room_read", { roomId: id });
   };
 
   const sendMessage = () => {
@@ -177,9 +164,23 @@ export default function MessagesScreen() {
     };
     
     console.log("Emitting send_message with payload:", msgData);
-    socketRef.current?.emit("send_message", msgData);
+    socket?.emit("send_message", msgData);
     
-    setMessages(prev => [...prev, { ...msgData, createdAt: new Date().toISOString(), status: "sending" }]);
+    const now = new Date().toISOString();
+    setMessages(prev => [...prev, { ...msgData, createdAt: now, status: "sending" }]);
+    
+    setRooms(prevRooms => {
+      const updated = prevRooms.map(r => {
+        const rId = r.roomId || r._id || r.id;
+        if (String(rId) === String(selectedRoomId)) {
+          return { ...r, lastMessage: inputText, lastMessageAt: now };
+        }
+        return r;
+      });
+      updated.sort((a,b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt));
+      return updated;
+    });
+
     setInputText("");
   };
 
@@ -208,7 +209,7 @@ export default function MessagesScreen() {
       }
 
       const res = await axios.post(`${API_BASE}/createroom`, payload, {
-        headers: { Authorization: `Bearer ${tokenStr}` }
+        headers: { Authorization: `Bearer ${user?.token}` }
       });
       
       const newRoom = res.data;
@@ -216,7 +217,11 @@ export default function MessagesScreen() {
         setShowCreateModal(false);
         setChatType("");
         setContextIdInput("");
-        fetchRooms(tokenStr); 
+        setRooms(prev => {
+          const exists = prev.find(r => (r.roomId || r._id || r.id) === (newRoom.roomId || newRoom._id || newRoom.id));
+          if (exists) return prev;
+          return [newRoom, ...prev];
+        });
         selectRoom(newRoom);
         Toast.show({ type: 'success', text1: 'Chat created successfully!' });
       }
@@ -226,13 +231,19 @@ export default function MessagesScreen() {
     }
   };
 
-  if (loadingRooms) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#024A63" />
-      </View>
-    );
-  }
+  const emitTyping = () => {
+    if (!selectedRoomId) return;
+    socket?.emit("typing", { roomId: selectedRoomId, isTyping: true });
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket?.emit("typing", { roomId: selectedRoomId, isTyping: false });
+    }, 1500);
+  };
+
+  const handleTextChange = (text) => {
+    setInputText(text);
+    emitTyping();
+  };
 
   if (selectedRoomId) {
     return (
@@ -243,35 +254,64 @@ export default function MessagesScreen() {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setSelectedRoomId(null)} style={{ padding: 10 }}>
+          <TouchableOpacity onPress={() => { setSelectedRoom(null); activeRoomRef.current = null; }} style={{ padding: 10 }}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chat with Admin</Text>
+          <Text style={styles.headerTitle}>{getRoomName(selectedRoom)}</Text>
         </View>
 
         <FlatList
           data={messages}
-          keyExtractor={(item, idx) => item._id || String(idx)}
+          keyExtractor={(item, idx) => item._id || item.tempId || String(idx)}
           onContentSizeChange={(w, h) => { flatListRef.current?.scrollToEnd({ animated: true }); }}
           onLayout={() => { flatListRef.current?.scrollToEnd({ animated: true }); }}
           ref={flatListRef}
           renderItem={({ item }) => {
-            const isMe = item.senderType === 'SELLER';
+            const isMe = item.senderType === 'SELLER' || String(item.senderId) === String(sellerId);
+            const time = new Date(item.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const otherName = getRoomName(selectedRoom);
+            const otherLetter = otherName.charAt(0).toUpperCase();
+            
+            const myName = user?.name || user?.user?.name || user?.data?.name || "Me";
+            const myLetter = myName.charAt(0).toUpperCase();
+
             return (
-              <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.otherMessage]}>
-                <Text style={[styles.messageText, isMe && { color: '#fff' }]}>{item.message}</Text>
+              <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: 12}}>
+                {!isMe && (
+                  <View style={{width: 32, height: 32, borderRadius: 16, backgroundColor: '#36234E', justifyContent: 'center', alignItems: 'center', marginRight: 8}}>
+                     <Text style={{color: '#fff', fontSize: 14, fontFamily: 'msemibold'}}>{otherLetter}</Text>
+                  </View>
+                )}
+                <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.otherMessage, {marginBottom: 0}]}>
+                  <Text style={[styles.messageText, isMe && { color: '#fff' }]}>{item.message}</Text>
+                  <Text style={{fontSize: 10, color: isMe ? '#e0e0e0' : '#888', alignSelf: 'flex-end', marginTop: 4}}>{time}</Text>
+                </View>
+                {isMe && (
+                  <View style={{width: 32, height: 32, borderRadius: 16, backgroundColor: '#024A63', justifyContent: 'center', alignItems: 'center', marginLeft: 8}}>
+                     <Text style={{color: '#fff', fontSize: 14, fontFamily: 'msemibold'}}>{myLetter}</Text>
+                  </View>
+                )}
               </View>
             );
           }}
           contentContainerStyle={{ padding: 16 }}
         />
 
+        {typingRooms[selectedRoomId] && (
+          <View style={{paddingHorizontal: 20, paddingBottom: 10, flexDirection: 'row', alignItems: 'center'}}>
+             <View style={{width: 24, height: 24, borderRadius: 12, backgroundColor: '#36234E', justifyContent: 'center', alignItems: 'center', marginRight: 8}}>
+                <Text style={{color: '#fff', fontSize: 10, fontFamily: 'msemibold'}}>{getRoomName(selectedRoom).charAt(0).toUpperCase()}</Text>
+             </View>
+             <Text style={{color: '#888', fontStyle: 'italic', fontSize: 12}}>typing...</Text>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={handleTextChange}
           />
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
             <Ionicons name="send" size={20} color="#fff" />
