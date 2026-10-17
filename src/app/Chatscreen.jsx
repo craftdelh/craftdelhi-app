@@ -75,7 +75,23 @@ const Chatscreen = () => {
   useEffect(() => {
     activeRoomRef.current = currentRoomId;
     setActiveRoomId(currentRoomId);
-  }, [currentRoomId, setActiveRoomId]);
+
+    if (currentRoomId) {
+      setRooms((prev) =>
+        prev.map((r) => {
+          const rId = r.roomId || r._id || r.id;
+          if (String(rId) === String(currentRoomId)) {
+            return { ...r, unreadCount: 0 };
+          }
+          return r;
+        })
+      );
+    }
+
+    return () => {
+      setActiveRoomId(null);
+    };
+  }, [currentRoomId, setActiveRoomId, setRooms]);
 
   // Load existing messages for a room
   const loadMessages = useCallback(
@@ -269,6 +285,28 @@ const Chatscreen = () => {
     // Optimistic UI update
     setMessages((prev) => [...prev, msgPayload]);
 
+    // Update rooms list in UserContext so latest message shows on list
+    setRooms((prev) => {
+      const updated = prev.map((r) => {
+        const rId = r.roomId || r._id || r.id;
+        if (String(rId) === String(roomId)) {
+          return {
+            ...r,
+            lastMessage: text.trim(),
+            lastMessageAt: now,
+            unreadCount: 0,
+          };
+        }
+        return r;
+      });
+      updated.sort(
+        (a, b) =>
+          new Date(b.lastMessageAt || b.createdAt || 0) -
+          new Date(a.lastMessageAt || a.createdAt || 0)
+      );
+      return updated;
+    });
+
     if (socket?.connected) {
       socket.emit('send_message', {
         roomId,
@@ -361,6 +399,28 @@ const Chatscreen = () => {
             tempId,
           });
         }
+
+        // Update rooms list with latest photo message
+        setRooms((prev) => {
+          const updated = prev.map((r) => {
+            const rId = r.roomId || r._id || r.id;
+            if (String(rId) === String(currentRoomId)) {
+              return {
+                ...r,
+                lastMessage: '📷 Photo',
+                lastMessageAt: now,
+                unreadCount: 0,
+              };
+            }
+            return r;
+          });
+          updated.sort(
+            (a, b) =>
+              new Date(b.lastMessageAt || b.createdAt || 0) -
+              new Date(a.lastMessageAt || a.createdAt || 0)
+          );
+          return updated;
+        });
       } catch (err) {
         console.error('Image upload failed:', err);
         Toast.show({ type: 'error', text1: 'Upload failed' });
@@ -417,11 +477,11 @@ const Chatscreen = () => {
             <Text style={[styles.timeText, isMe ? styles.timeTextMe : styles.timeTextOther]}>
               {formatTime(item.createdAt)}
             </Text>
-            {isMe && (
+            {isMe && item.status === 'sending' && (
               <Ionicons
-                name={item.status === 'sending' ? 'time-outline' : 'checkmark-done'}
-                size={14}
-                color={item.status === 'sending' ? 'rgba(255,255,255,0.6)' : '#69D297'}
+                name="time-outline"
+                size={12}
+                color="rgba(255,255,255,0.7)"
                 style={{ marginLeft: 4 }}
               />
             )}

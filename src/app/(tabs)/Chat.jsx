@@ -111,7 +111,16 @@ const Chat = () => {
       <View>
         <TouchableOpacity
           style={styles.chatItem}
-          onPress={() =>
+          onPress={() => {
+            setRooms((prev) =>
+              prev.map((r) => {
+                const rId = r.roomId || r._id || r.id;
+                if (String(rId) === String(roomId)) {
+                  return { ...r, unreadCount: 0 };
+                }
+                return r;
+              })
+            );
             router.push({
               pathname: '/Chatscreen',
               params: {
@@ -120,8 +129,8 @@ const Chat = () => {
                 sellerId: otherUser?.userId || '',
                 contextType: item.contextType || 'GENERAL',
               },
-            })
-          }
+            });
+          }}
           activeOpacity={0.7}
         >
           <View
@@ -142,12 +151,20 @@ const Chat = () => {
             </View>
 
             <View style={styles.chatRowBottom}>
-              <Text style={styles.lastMessageText} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.lastMessageText,
+                  unread > 0 && styles.lastMessageUnread,
+                ]}
+                numberOfLines={1}
+              >
                 {item.lastMessage || 'No messages yet'}
               </Text>
               {unread > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unread}</Text>
+                  <Text style={styles.badgeText}>
+                    {unread > 99 ? '99+' : unread}
+                  </Text>
                 </View>
               )}
             </View>
@@ -373,8 +390,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  lastMessageUnread: {
+    color: '#0F172A',
+    fontWeight: '700',
+  },
   badge: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#EE6F69',
     borderRadius: 10,
     minWidth: 20,
     height: 20,

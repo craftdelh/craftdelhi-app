@@ -11,10 +11,7 @@ import { useUser } from '../../../context/UserContext';
 export default function TabLayout() {
   const cart = useSelector(state => state.cart.cart);
   const cartCount = cart?.length ?? 0;
-
-//   const { user } = useUser();
-  
-// console.log(user?.name, user?.isSeller);
+  const { totalUnread } = useUser();
 
   return (
     <Tabs
@@ -45,6 +42,13 @@ export default function TabLayout() {
         name="Chat"
         options={{
           title: 'Chat',
+          tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: '#EE6F69',
+            color: 'white',
+            fontSize: 10,
+            fontWeight: 'bold',
+          },
           tabBarIcon: ({ color }) => (
             <Ionicons name="chatbubble-ellipses-outline" size={22} color={color} />
           ),
