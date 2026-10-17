@@ -17,6 +17,7 @@ import ActionSheet from 'react-native-actions-sheet';
 import Toast from 'react-native-toast-message';
 import BuyNow from '../../components/BuyNow';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Skeleton from '../../components/Skeleton';
 
 const SIZE_ORDER = {
@@ -114,6 +115,55 @@ const ProductDetails = () => {
       mediaFiles = mediaFiles.filter(f => f.uri && f.uri.length > 5);
     }
 
+    const handleOpenChat = async () => {
+      let token = null;
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const u = JSON.parse(userStr);
+          token = u?.token;
+        }
+      } catch (e) {}
+
+      if (!token) {
+        Toast.show({
+          type: 'info',
+          text1: 'Login Required',
+          text2: 'Please login to chat with seller',
+        });
+        router.push('/auth/Signin');
+        return;
+      }
+
+      const sellerId =
+        product?.storeId ||
+        product?.seller_id ||
+        product?.store_id ||
+        product?.userId ||
+        product?.store?.id ||
+        product?.store?.seller_id;
+
+      if (!sellerId) {
+        Toast.show({
+          type: 'info',
+          text1: 'Seller not found',
+          text2: 'Unable to start chat for this product.',
+        });
+        return;
+      }
+
+      router.push({
+        pathname: '/Chatscreen',
+        params: {
+          sellerId: String(sellerId),
+          productId: String(product?.id || id || ''),
+          productName: product?.name || product?.title || '',
+          productPrice: String(product?.price || 0),
+          storeName: product?.store_name || product?.store?.store_name || 'Seller',
+        },
+      });
+    };
+
   return (
     <View style={{backgroundColor:'#f8f9fd',flex:1}}>
           <View style={[styles.header, { backgroundColor: '#fff' }]}>
@@ -123,17 +173,26 @@ const ProductDetails = () => {
     
             <Text style={styles.headerTitle}>Product View</Text>
     
-            <TouchableOpacity 
-              style={styles.iconBtn}
-              onPress={()=>router.push('/(tabs)/Cart')}
-            >
-              <Feather name="shopping-cart" size={22} color="black" />
-              {cart && cart.length > 0 && (
-                 <View style={styles.badge}>
-                   <Text style={styles.badgeText}>{cart.length}</Text>
-                 </View>
-              )}
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity 
+                style={[styles.iconBtn, { marginRight: 6 }]}
+                onPress={handleOpenChat}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color="black" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.iconBtn}
+                onPress={()=>router.push('/(tabs)/Cart')}
+              >
+                <Feather name="shopping-cart" size={22} color="black" />
+                {cart && cart.length > 0 && (
+                   <View style={styles.badge}>
+                     <Text style={styles.badgeText}>{cart.length}</Text>
+                   </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
           <Search/>
 
@@ -169,15 +228,20 @@ const ProductDetails = () => {
 
 
           <View style={styles.floatingBar}>
+            <TouchableOpacity onPress={handleOpenChat} style={styles.chatBarButton} activeOpacity={0.7}>
+              <Ionicons name="chatbubbles-outline" size={20} color="#024A63" />
+              <Text style={styles.chatBarText}>Chat</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity onPress={()=>actionSheetRef.current?.show()} style={[styles.button, styles.buyButton]}>
-              <Buy width={20} height={20} style={styles.iconSpacing} />
+              <Buy width={18} height={18} style={styles.iconSpacing} />
               <Text style={styles.buttonText}>Buy Now</Text>
             </TouchableOpacity>
 
             {cartItem ? (
               <TouchableOpacity onPress={() => router.push('/(tabs)/Cart')} style={[styles.button, styles.cartButton]}>
                 <Ionicons name="checkmark-done-circle" size={18} color="white" style={styles.iconSpacing} />
-                <Text style={styles.buttonText}>Go to Cart ({cart.length})</Text>
+                <Text style={styles.buttonText}>Cart ({cart.length})</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => {
@@ -189,8 +253,8 @@ const ProductDetails = () => {
                     visibilityTime: 2000,
                   });
                 }} style={[styles.button, styles.cartButton]}>
-                <Cart width={20} height={20} style={styles.iconSpacing} />
-                <Text style={styles.buttonText}>Add to Cart ({cart.length})</Text>
+                <Cart width={18} height={18} style={styles.iconSpacing} />
+                <Text style={styles.buttonText}>Add to Cart</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -288,7 +352,24 @@ const styles = StyleSheet.create({
   iconSpacing: {
     marginRight: 8,
   },
-
+  chatBarButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F4F8',
+    borderWidth: 1,
+    borderColor: '#D0DCE5',
+    marginRight: 8,
+    minWidth: 54,
+  },
+  chatBarText: {
+    color: '#024A63',
+    fontSize: 11,
+    fontFamily: 'mbold',
+    marginTop: 2,
+  },
 });
 
   

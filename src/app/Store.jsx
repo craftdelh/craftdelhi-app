@@ -16,6 +16,8 @@ import storeimage from '../../assets/images/storeimage.png';
 import Products from '../../components/store/Products';
 import StoreReels from '../../components/store/StoreReels';
 import Search from '../../components/Search';
+import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Store = () => {
   const { store_username } = useLocalSearchParams();
@@ -115,6 +117,52 @@ const Store = () => {
     return { uri: resolveUrl(imgData) };
   };
 
+  const handleChatWithStore = async () => {
+    let token = null;
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        token = u?.token;
+      }
+    } catch (e) {}
+
+    if (!token) {
+      Toast.show({
+        type: 'info',
+        text1: 'Login Required',
+        text2: 'Please login to chat with seller',
+      });
+      router.push('/auth/Signin');
+      return;
+    }
+
+    const sellerId =
+      storeData?.seller_id ||
+      storeData?.user_id ||
+      storeData?.userId ||
+      store?.seller_id ||
+      store?.user_id ||
+      store?.userId;
+
+    if (!sellerId) {
+      Toast.show({
+        type: 'info',
+        text1: 'Seller not found',
+        text2: 'Unable to start chat with this store.',
+      });
+      return;
+    }
+
+    router.push({
+      pathname: '/Chatscreen',
+      params: {
+        sellerId: String(sellerId),
+        storeName: storeData?.store_name || 'Seller',
+      },
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -122,7 +170,9 @@ const Store = () => {
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{storeData?.store_name || "Store"}</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity onPress={handleChatWithStore} style={{ padding: 4 }}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color="#024A63" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.localSearchContainer}>

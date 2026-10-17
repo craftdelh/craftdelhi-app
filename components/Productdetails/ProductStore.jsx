@@ -75,14 +75,53 @@ const ProductStore = ({ scrollY, product }) => {
     return () => scrollY.removeListener(listenerId);
   }, [layout]);
 
-  const handleChatPress = () => {
-    if (isLoggedIn) {
-      Toast.show({ type: 'success', text1: 'Opening chat...' });
-      // TODO: router.push('/Chat') when chat page is available
-    } else {
-      Toast.show({ type: 'error', text1: 'Please login to chat with seller' });
+  const handleChatPress = async () => {
+    let token = null;
+    try {
+      const userStr = await AsyncStorage.getItem('user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        token = u?.token;
+      }
+    } catch (e) {}
+
+    if (!token && !isLoggedIn) {
+      Toast.show({
+        type: 'info',
+        text1: 'Login Required',
+        text2: 'Please login to chat with seller',
+      });
       router.push('/auth/Signin');
+      return;
     }
+
+    const sellerId =
+      product?.storeId ||
+      product?.seller_id ||
+      product?.store_id ||
+      product?.userId ||
+      product?.store?.id ||
+      product?.store?.seller_id;
+
+    if (!sellerId) {
+      Toast.show({
+        type: 'info',
+        text1: 'Seller not found',
+        text2: 'Unable to start chat with this seller.',
+      });
+      return;
+    }
+
+    router.push({
+      pathname: '/Chatscreen',
+      params: {
+        sellerId: String(sellerId),
+        productId: String(product?.id || ''),
+        productName: product?.name || product?.title || '',
+        productPrice: String(product?.price || 0),
+        storeName: product?.store_name || product?.store?.store_name || 'Seller',
+      },
+    });
   };
 
 
