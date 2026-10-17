@@ -2,12 +2,51 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { isTokenExpired, clearAuthSession } from '../src/utils/auth';
 
 const UserContext = createContext();
 
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "https://backend.craftdelhi.com";
 const SOCKET_PATH = process.env.EXPO_PUBLIC_SOCKET_PATH || "/chat/socket.io";
 const API_BASE = process.env.EXPO_PUBLIC_CHAT_API_BASE || "https://backend.craftdelhi.com/chat";
+
+let isLoggingOut = false;
+
+// Global Axios Interceptor to catch 401 Unauthorized / Token Expiration across all API calls
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const status = error.response?.status;
+    const msg = (error.response?.data?.message || '').toLowerCase();
+    const isTokenErr =
+      status === 401 ||
+      msg.includes('token expired') ||
+      msg.includes('jwt expired') ||
+      msg.includes('invalid token');
+
+    if (isTokenErr && !isLoggingOut) {
+      isLoggingOut = true;
+      try {
+        await clearAuthSession();
+        Toast.show({
+          type: 'error',
+          text1: 'Session Expired',
+          text2: 'Your session has expired. Please login again.',
+        });
+        router.replace('/auth/Signin');
+      } catch (e) {
+        console.error('Logout on 401 error:', e);
+      } finally {
+        setTimeout(() => {
+          isLoggingOut = false;
+        }, 2500);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -25,7 +64,39 @@ export const UserProvider = ({ children }) => {
     roomsRef.current = rooms;
   }, [rooms]);
 
+  const logout = async (showAlert = false) => {
+    try {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      await clearAuthSession();
+      setUser(null);
+      setRooms([]);
+      if (showAlert) {
+        Toast.show({
+          type: 'info',
+          text1: 'Logged Out',
+          text2: 'You have been logged out successfully.',
+        });
+      }
+      router.replace('/auth/Signin');
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+  };
+
+  // Check 7-day token expiration on mount and whenever user changes
   useEffect(() => {
+    if (user && isTokenExpired(user)) {
+      logout(false);
+      Toast.show({
+        type: 'info',
+        text1: 'Session Expired',
+        text2: 'Your 7-day session has expired. Please login again.',
+      });
+      return;
+    }
+
     if (user?.token) {
       initGlobalChat(user.token);
     }
@@ -96,7 +167,20 @@ export const UserProvider = ({ children }) => {
   const totalUnread = rooms.reduce((acc, r) => acc + (r.unreadCount || 0), 0);
 
   return (
-    <UserContext.Provider value={{ user, setUser, socket: socketRef.current, rooms, setRooms, totalUnread, activeRoomId, setActiveRoomId }}>
+    <UserContext.Provider
+      value={{
+        user,
+        setUser,
+        socket: socketRef.current,
+        rooms,
+        setRooms,
+        totalUnread,
+        activeRoomId,
+        setActiveRoomId,
+        logout,
+        isTokenExpired,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

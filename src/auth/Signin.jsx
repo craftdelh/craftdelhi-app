@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Logo1 from '../../assets/images/logo1.svg';
 import { useUser } from '../../context/UserContext';
 import axios from 'axios';
+import { prepareUserDataWithExpiry } from '../utils/auth';
 
 const Signin = () => {
   const [username, setUsername] = useState('');
@@ -47,12 +48,12 @@ const handleLogin = async () => {
       return;
     }
 
-    const userData = {
+    const userData = prepareUserDataWithExpiry({
       token,
       role,
       id,
       isSeller: role === 2,
-    };
+    });
 
     await AsyncStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
@@ -165,15 +166,30 @@ const validateForm = () => {
           </View>
 
           <View style={styles.buttonContainer}>
-           <TouchableOpacity
-  style={[styles.button, (!isFormValid || loading) && styles.disabledButton]}
-  disabled={!isFormValid || loading}
-  onPress={handleLogin}
->
-  <Text style={styles.buttonText}>
-    {loading ? 'Logging in...' : 'Continue'}
-  </Text>
-</TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, (!isFormValid || loading) && styles.disabledButton]}
+              disabled={!isFormValid || loading}
+              onPress={handleLogin}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Logging in...' : 'Continue'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.orDividerContainer}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>OR</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            <TouchableOpacity
+              style={styles.buyerDashboardBtn}
+              onPress={() => router.replace('/(tabs)/Home')}
+              activeOpacity={0.8}
+            >
+              <Icon name="bag-handle-outline" size={18} color="#003D4D" style={{ marginRight: 8 }} />
+              <Text style={styles.buyerDashboardBtnText}>Go to Buyer Dashboard</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Footer */}
@@ -292,6 +308,37 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  orDividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 14,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  orText: {
+    marginHorizontal: 12,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  buyerDashboardBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#003D4D',
+    backgroundColor: '#F0F8FA',
+    borderRadius: 8,
+    paddingVertical: 13,
+  },
+  buyerDashboardBtnText: {
+    color: '#003D4D',
+    fontWeight: '700',
+    fontSize: 14,
   },
   footer: {
     alignItems: 'center',

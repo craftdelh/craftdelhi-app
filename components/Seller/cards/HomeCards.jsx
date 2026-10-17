@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const HomeCards = ({ cardsData }) => {
@@ -40,7 +40,10 @@ const HomeCards = ({ cardsData }) => {
               colors={card.colors}
               style={[styles.card, index === 0 && { marginTop: -5 }]}
             >
-              <View style={styles.iconContainer}>{card.icon}</View>
+              <View style={styles.cardHeader}>
+                <View style={styles.iconContainer}>{card.icon}</View>
+               
+              </View>
 
               <View style={styles.textSection}>
                 <Text style={styles.title}>{card.title}</Text>
@@ -71,6 +74,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 15,
     marginTop:20
+  },
+  cardHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  withdrawBtn: {
+    backgroundColor: '#024A63',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  withdrawBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'mbold',
   },
   iconContainer: {
     width: 36,

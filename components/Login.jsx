@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import React from "react";
-import { ImageBackground, Text, View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import { Image, ImageBackground, Text, View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import * as Animatable from "react-native-animatable";
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -10,9 +10,6 @@ export default function Login() {
   return (
     <View style={styles.container}>
       <ImageBackground
-        // Using a clean solid background or gradient if the image is missing, but keeping the original require if they had img1.png
-        // If img1.png is missing, it will crash, so let's wrap it nicely or just use a modern gradient.
-        // I will keep img1.png just in case they added it, but add a dark overlay for premium feel.
         source={require("../assets/images/img1.png")}
         style={styles.background}
         resizeMode="cover"
@@ -23,8 +20,11 @@ export default function Login() {
         >
           <View style={styles.contentContainer}>
             <Animatable.View animation="fadeInDown" duration={1200} style={styles.logoContainer}>
-              {/* Replaced SVG with a clean Text logo or the splash-icon if preferred. Using premium typography. */}
-              <Text style={styles.logoText}>CD</Text>
+              <Image
+                source={require("../assets/images/icon1.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </Animatable.View>
             
             <Animatable.View animation="fadeIn" delay={400} style={styles.textContainer}>
@@ -75,21 +75,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 40,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  logoText: {
-    fontSize: 42,
-    color: '#fff',
-    fontFamily: 'mextrabold',
-    letterSpacing: 2,
+  logoImage: {
+    width: 68,
+    height: 68,
   },
   textContainer: {
     alignItems: 'center',

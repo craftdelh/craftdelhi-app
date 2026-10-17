@@ -18,6 +18,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Logo1 from '../../../assets/images/logo1.svg';
 import { useUser } from '../../../context/UserContext';
 import axios from 'axios';
+import { prepareUserDataWithExpiry } from '../../utils/auth';
 
 const Signin = () => {
   const [username, setUsername] = useState('');
@@ -48,14 +49,14 @@ const Signin = () => {
         return;
       }
 
-      const userData = {
+      const userData = prepareUserDataWithExpiry({
         token,
         role,
         id,
         isSeller: role === 2,
         name: name || 'User',
         email: username,
-      };
+      });
 
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
@@ -182,6 +183,21 @@ const Signin = () => {
                     {loading ? 'Logging in...' : 'Continue'}
                   </Text>
                 </TouchableOpacity>
+
+                <View style={styles.orDividerContainer}>
+                  <View style={styles.orLine} />
+                  <Text style={styles.orText}>OR</Text>
+                  <View style={styles.orLine} />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.buyerDashboardBtn}
+                  onPress={() => router.replace('/(tabs)/Home')}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="bag-handle-outline" size={18} color="#024a63" style={{ marginRight: 8 }} />
+                  <Text style={styles.buyerDashboardBtnText}>Go to Buyer Dashboard</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Footer */}
@@ -265,6 +281,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  headerTopRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  skipToBuyerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8FA',
+    borderWidth: 1,
+    borderColor: '#BEE3F8',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 2,
+  },
+  skipToBuyerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#024a63',
+  },
   loginTitle: {
     fontSize: 22,
     fontWeight: '700',
@@ -330,6 +369,37 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#e5e7eb',
+  },
+  orDividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 14,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  orText: {
+    marginHorizontal: 12,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  buyerDashboardBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#024a63',
+    backgroundColor: '#F0F8FA',
+    borderRadius: 6,
+    paddingVertical: 13,
+  },
+  buyerDashboardBtnText: {
+    color: '#024a63',
+    fontWeight: '700',
+    fontSize: 14,
   },
   buttonText: {
     color: '#fff',
